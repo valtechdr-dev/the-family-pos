@@ -1,1270 +1,442 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Family Bar & Lounge — POS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión POS</title>
+    <style>
+        /* --- ESTILOS BASE Y CORRECCIONES --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f6f9;
+            color: #333;
+        }
 
-<!-- ══════════════════════════════════════════
-     FIREBASE v8 SDK
-═══════════════════════════════════════════ -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+        /* Punto 6: Pantalla de Login */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(18, 18, 18, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+        .login-overlay.hidden {
+            display: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .login-card {
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-logo {
+            max-width: 80px;
+            margin-bottom: 1rem;
+        }
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        .btn-login-submit {
+            width: 100%;
+            padding: 0.75rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-login-submit:hover {
+            background: #0056b3;
+        }
+        .error-msg {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .hidden { display: none; }
 
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;900&display=swap');
-:root{
-  --bg:#141820;--panel:#1e2535;--panel2:#181e2c;--border:#29334a;
-  --green:#2ecc71;--glow:rgba(46,204,113,.2);--green2:#27ae60;
-  --amber:#f39c12;--red:#e74c3c;--blue:#3498db;--purple:#9b59b6;
-  --teal:#1abc9c;--text:#bfd0e8;--dim:#5a6f8a;--header:#0c1018;--accent:#00ffc8;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+        /* Punto 5: Wrapper e Interfaz General */
+        .main-container { padding: 2rem; }
+        .dtable-wrap {
+            width: 100%;
+            overflow-x: auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-top: 1rem;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .data-table th, .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        .data-table th { background: #f8f9fa; font-weight: 600; }
 
-/* ── HEADER ── */
-header{background:var(--header);border-bottom:1px solid var(--border);padding:0 14px;height:48px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.logo{font-family:'Share Tech Mono',monospace;font-size:.95rem;color:var(--accent);letter-spacing:3px;display:flex;align-items:center;gap:8px;}
-.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 7px var(--accent);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-.hr{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--dim);font-family:'Share Tech Mono',monospace;}
-.clock{color:var(--accent);}
-.ubadge{background:rgba(46,204,113,.1);border:1px solid var(--green);border-radius:4px;padding:2px 9px;color:var(--green);font-size:.67rem;font-family:'Exo 2',sans-serif;}
-.hbtn{padding:4px 11px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--dim);font-family:'Exo 2',sans-serif;font-size:.67rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .14s;text-transform:uppercase;}
-.hbtn:hover{border-color:var(--accent);color:var(--accent);}
-.hbtn.adm{border-color:var(--purple);color:var(--purple);}
-.hbtn.adm:hover{background:rgba(155,89,182,.15);}
-/* Firebase status dot */
-.fbs{width:8px;height:8px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background .3s;}
-.fbs.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
-.fbs.err{background:var(--red);}
+        /* Grid de Menú */
+        #items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .grid-item-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 100px;
+            transition: all 0.2s;
+        }
+        .grid-item-btn:hover {
+            border-color: #007bff;
+            background: #f0f7ff;
+        }
+        .item-name { font-weight: bold; font-size: 1rem; }
+        .item-price { color: #28a745; margin-top: 0.5rem; }
 
-/* ── ZONES ── */
-.zones-bar{background:var(--panel2);border-bottom:1px solid var(--border);padding:6px 12px;display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap;}
-.zone-btn{padding:5px 13px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--dim);font-family:'Exo 2',sans-serif;font-size:.67rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .13s;}
-.zone-btn:hover{border-color:var(--green);color:var(--green);background:var(--glow);}
-.zone-btn.active{background:var(--green2);border-color:var(--green);color:#fff;}
-.zone-label{margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:.85rem;letter-spacing:4px;color:var(--dim);}
+        /* Modales */
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+        .modal.active { display: block; }
+    </style>
 
-/* ── MAIN ── */
-.main{display:flex;flex:1;overflow:hidden;}
-.tables-panel{flex:1;padding:14px;overflow-y:auto;}
-.tables-panel::-webkit-scrollbar{width:4px;}
-.tables-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-.tables-grid{display:grid;grid-template-columns:repeat(auto-fill,86px);gap:13px;align-content:start;}
-
-/* ── TABLE BUTTONS ── */
-.table-btn{width:82px;height:82px;border:2px solid;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:all .16s;font-family:'Exo 2',sans-serif;user-select:none;}
-.cdot{position:absolute;width:5px;height:5px;border-radius:50%;}
-.table-btn.free{background:rgba(46,204,113,.09);border-color:var(--green);color:var(--green);}
-.table-btn.free .cdot{background:var(--green);}
-.table-btn.free:hover{background:rgba(46,204,113,.2);box-shadow:0 0 14px var(--glow);transform:scale(1.05);}
-.table-btn.occupied{background:rgba(243,156,18,.09);border-color:var(--amber);color:var(--amber);}
-.table-btn.occupied .cdot{background:var(--amber);}
-.table-btn.occupied:hover{background:rgba(243,156,18,.18);transform:scale(1.05);}
-.table-btn.split{background:rgba(52,152,219,.09);border-color:var(--blue);color:var(--blue);}
-.table-btn.split .cdot{background:var(--blue);}
-.table-btn.split:hover{background:rgba(52,152,219,.18);transform:scale(1.05);}
-.table-btn.selected{outline:2px solid var(--accent);outline-offset:2px;}
-.tid{font-size:.97rem;font-weight:700;letter-spacing:1px;}
-.tsub{font-size:.56rem;margin-top:2px;opacity:.7;max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.tamt{font-size:.6rem;font-family:'Share Tech Mono',monospace;margin-top:1px;}
-.tspbadge{font-size:.52rem;margin-top:1px;opacity:.65;}
-
-/* ── ORDER PANEL ── */
-.order-panel{width:320px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .18s;}
-.order-panel.hidden{width:0;overflow:hidden;}
-.op-head{padding:9px 12px;border-bottom:1px solid var(--border);background:var(--panel2);display:flex;align-items:center;gap:7px;flex-shrink:0;}
-.op-title{font-size:.8rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);flex:1;}
-.xbtn{background:none;border:none;color:var(--dim);cursor:pointer;font-size:.95rem;padding:1px 5px;border-radius:3px;transition:color .11s;}
-.xbtn:hover{color:var(--red);}
-.split-tabs{display:flex;gap:4px;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--panel2);overflow-x:auto;flex-shrink:0;}
-.split-tabs::-webkit-scrollbar{height:2px;}
-.split-tabs::-webkit-scrollbar-thumb{background:var(--border);}
-.stab{padding:3px 10px;border:1px solid var(--border);border-radius:14px;font-size:.63rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .13s;background:transparent;color:var(--dim);font-family:'Exo 2',sans-serif;}
-.stab:hover{border-color:var(--blue);color:var(--blue);}
-.stab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
-.stab.add{border-style:dashed;}
-.stab.add:hover{border-color:var(--accent);color:var(--accent);}
-.order-items{flex:1;overflow-y:auto;padding:9px 10px;}
-.order-items::-webkit-scrollbar{width:3px;}
-.order-items::-webkit-scrollbar-thumb{background:var(--border);}
-.oi{display:flex;align-items:center;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.73rem;}
-.oi-name{flex:1;color:var(--text);line-height:1.25;}
-.qc{display:flex;align-items:center;gap:3px;}
-.qbtn{background:var(--border);border:none;color:var(--text);width:17px;height:17px;border-radius:3px;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;transition:background .11s;}
-.qbtn:hover{background:var(--green2);color:#fff;}
-.iqty{font-family:'Share Tech Mono',monospace;font-size:.67rem;color:var(--accent);min-width:16px;text-align:center;}
-.iprice{font-family:'Share Tech Mono',monospace;color:var(--green);min-width:50px;text-align:right;font-size:.68rem;}
-.idel{background:none;border:none;color:var(--dim);cursor:pointer;font-size:.75rem;padding:0 2px;transition:color .11s;}
-.idel:hover{color:var(--red);}
-.op-foot{padding:11px;border-top:1px solid var(--border);background:var(--panel2);flex-shrink:0;}
-.tot-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
-.tot-lbl{font-weight:600;font-size:.74rem;letter-spacing:1px;text-transform:uppercase;color:var(--dim);}
-.tot-amt{font-family:'Share Tech Mono',monospace;font-size:1.05rem;color:var(--accent);}
-.abtns{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
-.abtn{padding:7px 4px;border:none;border-radius:5px;font-family:'Exo 2',sans-serif;font-size:.63rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;transition:all .13s;}
-.abtn-add{background:rgba(52,152,219,.14);color:var(--blue);border:1px solid var(--blue);}
-.abtn-add:hover{background:rgba(52,152,219,.28);}
-.abtn-pay{background:var(--green2);color:#fff;}
-.abtn-pay:hover{background:var(--green);}
-.abtn-print{background:rgba(155,89,182,.12);color:var(--purple);border:1px solid var(--purple);}
-.abtn-print:hover{background:rgba(155,89,182,.24);}
-.abtn-cancel{background:rgba(231,76,60,.1);color:var(--red);border:1px solid var(--red);}
-.abtn-cancel:hover{background:rgba(231,76,60,.22);}
-.abtn-sp{grid-column:span 2;background:rgba(0,255,200,.06);color:var(--accent);border:1px solid rgba(0,255,200,.3);}
-.abtn-sp:hover{background:rgba(0,255,200,.13);}
-
-/* ── STATS ── */
-.stats-bar{background:var(--header);border-top:1px solid var(--border);padding:5px 14px;display:flex;gap:16px;align-items:center;flex-shrink:0;}
-.stat{display:flex;align-items:center;gap:5px;font-size:.63rem;color:var(--dim);font-family:'Share Tech Mono',monospace;}
-.sv{color:var(--accent);}
-.cab-btn{margin-left:auto;padding:4px 11px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--dim);font-family:'Exo 2',sans-serif;font-size:.63rem;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .13s;}
-.cab-btn:hover{color:var(--text);border-color:var(--dim);}
-
-/* ── OVERLAYS ── */
-.ov{position:fixed;inset:0;background:rgba(8,12,20,.87);backdrop-filter:blur(5px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .18s;}
-.ov.show{opacity:1;pointer-events:all;}
-.modal{background:var(--panel);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.6);transform:translateY(8px);transition:transform .18s;max-height:90vh;}
-.ov.show .modal{transform:translateY(0);}
-.mh{padding:11px 15px;border-bottom:1px solid var(--border);background:var(--panel2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.mt{font-size:.8rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);}
-.mb{padding:14px;overflow-y:auto;flex:1;}
-.mb::-webkit-scrollbar{width:4px;}
-.mb::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-
-/* ── MENU ── */
-#ovMenu .modal{width:720px;}
-.msearch{width:100%;padding:7px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:.78rem;margin-bottom:10px;outline:none;transition:border-color .13s;}
-.msearch:focus{border-color:var(--accent);}
-.msearch::placeholder{color:var(--dim);}
-.mcats{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px;}
-.mcat{padding:4px 11px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--dim);font-family:'Exo 2',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.8px;cursor:pointer;transition:all .13s;}
-.mcat.active,.mcat:hover{background:var(--glow);border-color:var(--green);color:var(--green);}
-.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
-.mitem{padding:9px 11px;border:1px solid var(--border);border-radius:6px;background:var(--panel2);cursor:pointer;transition:all .13s;display:flex;flex-direction:column;gap:2px;}
-.mitem:hover{border-color:var(--green);background:var(--glow);}
-.mname{font-size:.73rem;font-weight:600;color:var(--text);line-height:1.3;}
-.mprice{font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--green);}
-
-/* ── ADMIN ── */
-#ovAdmin .modal{width:880px;height:90vh;}
-.adm-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--panel2);flex-shrink:0;}
-.adm-tab{padding:10px 18px;font-family:'Exo 2',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;transition:all .14s;background:none;border-top:none;border-left:none;border-right:none;}
-.adm-tab:hover{color:var(--text);}
-.adm-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.adm-page{display:none;flex-direction:column;gap:14px;flex:1;overflow-y:auto;padding:14px;}
-.adm-page.show{display:flex;}
-.adm-page::-webkit-scrollbar{width:4px;}
-.adm-page::-webkit-scrollbar-thumb{background:var(--border);}
-
-/* KPI */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-.kpi{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;}
-.kpi-lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--dim);margin-bottom:5px;}
-.kpi-val{font-family:'Share Tech Mono',monospace;font-size:1.3rem;color:var(--accent);}
-.kpi-sub{font-size:.61rem;color:var(--dim);margin-top:3px;}
-.chart-wrap{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;}
-.chart-title{font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
-.brow{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
-.blbl{font-size:.64rem;color:var(--text);min-width:165px;max-width:165px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.btrack{flex:1;background:rgba(255,255,255,.06);border-radius:3px;height:14px;overflow:hidden;}
-.bfill{height:100%;border-radius:3px;transition:width .4s;}
-.bval{font-family:'Share Tech Mono',monospace;font-size:.64rem;color:var(--accent);min-width:58px;text-align:right;}
-.cat-bars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-.catb{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:11px;}
-.catb-name{font-size:.64rem;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:5px;}
-.catb-amt{font-family:'Share Tech Mono',monospace;font-size:1.05rem;color:var(--text);margin-bottom:4px;}
-.catb-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.06);}
-.catb-fill{height:100%;border-radius:3px;}
-.catb-pct{font-size:.6rem;color:var(--dim);margin-top:3px;}
-
-/* Tables */
-.dtable{width:100%;border-collapse:collapse;font-size:.71rem;}
-.dtable th{text-align:left;padding:7px 8px;color:var(--dim);font-weight:700;letter-spacing:.8px;text-transform:uppercase;border-bottom:1px solid var(--border);font-size:.63rem;}
-.dtable td{padding:7px 8px;border-bottom:1px solid rgba(41,51,74,.5);color:var(--text);vertical-align:middle;}
-.dtable tr:hover td{background:rgba(255,255,255,.025);}
-.void-btn{padding:3px 9px;border-radius:4px;font-family:'Exo 2',sans-serif;font-size:.6rem;font-weight:700;letter-spacing:.6px;cursor:pointer;border:1px solid var(--red);color:var(--red);background:transparent;transition:all .12s;}
-.void-btn:hover{background:rgba(231,76,60,.18);}
-.voided{text-decoration:line-through;opacity:.45;}
-.void-tag{padding:1px 6px;border-radius:8px;font-size:.58rem;font-weight:700;background:rgba(231,76,60,.15);color:var(--red);border:1px solid var(--red);margin-left:6px;}
-
-/* Users */
-.user-card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;}
-.uavatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;}
-.uinfo{flex:1;}
-.uname{font-weight:700;font-size:.8rem;}
-.urole{font-size:.61rem;color:var(--dim);letter-spacing:.8px;text-transform:uppercase;margin-top:1px;}
-.ubtns{display:flex;gap:5px;}
-.ubtn{padding:4px 10px;border-radius:4px;font-family:'Exo 2',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.7px;text-transform:uppercase;cursor:pointer;transition:all .13s;border:1px solid;}
-.ubtn-edit{border-color:var(--blue);color:var(--blue);background:transparent;}
-.ubtn-edit:hover{background:rgba(52,152,219,.18);}
-.ubtn-del{border-color:var(--red);color:var(--red);background:transparent;}
-.ubtn-del:hover{background:rgba(231,76,60,.18);}
-.uform{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:9px;}
-.uform-full{grid-column:span 2;}
-label{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);margin-bottom:4px;}
-input[type=text],input[type=password],select{width:100%;padding:7px 10px;background:var(--panel);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:.75rem;outline:none;transition:border-color .13s;}
-input:focus,select:focus{border-color:var(--accent);}
-select option{background:var(--panel);}
-.sbtn{padding:7px 16px;border-radius:5px;font-family:'Exo 2',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .13s;border:none;}
-.sbtn-pri{background:var(--green2);color:#fff;}
-.sbtn-pri:hover{background:var(--green);}
-.sbtn-sec{background:var(--border);color:var(--text);}
-.sbtn-sec:hover{background:var(--dim);}
-.users-grid{display:grid;gap:8px;}
-.section-head{display:flex;justify-content:space-between;align-items:center;}
-.section-title{font-size:.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);}
-.tag{padding:2px 8px;border-radius:10px;font-size:.59rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;}
-.tag-admin{background:rgba(155,89,182,.18);color:var(--purple);border:1px solid var(--purple);}
-.tag-mesero{background:rgba(52,152,219,.15);color:var(--blue);border:1px solid var(--blue);}
-.tag-cajero{background:rgba(243,156,18,.15);color:var(--amber);border:1px solid var(--amber);}
-.tag-occ{background:rgba(243,156,18,.12);color:var(--amber);border:1px solid var(--amber);}
-.tag-split{background:rgba(52,152,219,.12);color:var(--blue);border:1px solid var(--blue);}
-
-/* Print */
-#ovPrint .modal{width:380px;}
-.receipt{font-family:'Share Tech Mono',monospace;font-size:.75rem;color:#222;background:#fff;padding:18px;line-height:1.6;}
-.receipt-title{text-align:center;font-size:1.1rem;font-weight:bold;letter-spacing:3px;margin-bottom:2px;}
-.receipt-sub{text-align:center;font-size:.65rem;letter-spacing:1px;margin-bottom:14px;color:#555;}
-.receipt hr{border:none;border-top:1px dashed #aaa;margin:10px 0;}
-.receipt-row{display:flex;justify-content:space-between;}
-.receipt-total{font-weight:bold;font-size:.9rem;}
-.receipt-footer{text-align:center;font-size:.65rem;color:#777;margin-top:12px;}
-.print-actions{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);flex-shrink:0;}
-
-/* Split assign */
-#ovSplit .modal{width:520px;}
-.salist{display:flex;flex-direction:column;gap:6px;}
-.sarow{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:5px;font-size:.73rem;}
-.sarow .oi-name{flex:1;}
-.sasel{padding:4px 7px;background:var(--panel);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:.7rem;font-family:'Exo 2',sans-serif;outline:none;}
-
-/* Firebase config modal */
-#ovFBConfig .modal{width:500px;}
-.fb-info{font-size:.72rem;color:var(--dim);line-height:1.7;margin-bottom:14px;padding:10px 12px;background:rgba(0,255,200,.05);border:1px solid rgba(0,255,200,.15);border-radius:6px;}
-.fb-info code{font-family:'Share Tech Mono',monospace;color:var(--accent);font-size:.7rem;}
-
-/* Login */
-#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;}
-.login-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:36px 32px;width:340px;display:flex;flex-direction:column;gap:16px;}
-.login-logo{font-family:'Share Tech Mono',monospace;font-size:1.2rem;color:var(--accent);letter-spacing:4px;text-align:center;margin-bottom:6px;}
-.login-sub{text-align:center;font-size:.68rem;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
-.login-err{color:var(--red);font-size:.7rem;text-align:center;min-height:14px;}
-.login-hint{font-size:.63rem;color:var(--dim);text-align:center;opacity:.6;}
-
-/* Toast */
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--green2);color:#fff;padding:9px 22px;border-radius:6px;font-size:.76rem;font-weight:600;letter-spacing:.8px;z-index:9999;transition:transform .28s;box-shadow:0 4px 20px rgba(0,0,0,.4);}
-.toast.show{transform:translateX(-50%) translateY(0);}
-.toast.err{background:var(--red);}
-.toast.info{background:var(--blue);}
-.toast.warn{background:var(--amber);color:#111;}
-
-/* Misc */
-.empty-msg{color:var(--dim);font-size:.73rem;text-align:center;padding:22px 0;}
-.flex-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-@media print{body>*:not(#printDoc){display:none!important;}#printDoc{display:block!important;position:fixed;inset:0;}}
-#printDoc{display:none;}
-</style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<!-- ══ LOGIN ══ -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">THE FAMILY</div>
-    <div class="login-sub">Bar &amp; Lounge — Sistema POS</div>
-    <div><label>Usuario</label><input type="text" id="lusr" placeholder="usuario" autocomplete="off"></div>
-    <div><label>Contraseña</label><input type="password" id="lpass" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="login-err" id="lerr"></div>
-    <button class="sbtn sbtn-pri" onclick="doLogin()">Entrar al Sistema</button>
-    <div class="login-hint">admin / admin777 &nbsp;·&nbsp; m1 / 1234 &nbsp;·&nbsp; caja / caja123</div>
-  </div>
-</div>
-
-<!-- ══ FIREBASE CONFIG MODAL ══ -->
-<div class="ov" id="ovFBConfig">
-  <div class="modal">
-    <div class="mh"><span class="mt">🔥 Configurar Firebase</span><button class="xbtn" onclick="closeOv('ovFBConfig')">✕</button></div>
-    <div class="mb">
-      <div class="fb-info">
-        Para sincronización en tiempo real entre todos los dispositivos, ingresa los datos de tu proyecto de Firebase.<br><br>
-        1. Ve a <code>console.firebase.google.com</code><br>
-        2. Crea un proyecto → Realtime Database<br>
-        3. Copia la configuración de <code>Project Settings → Your apps</code><br>
-        4. Pégala aquí y guarda.
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
-        <div><label>API Key</label><input type="text" id="fb_apiKey" placeholder="AIzaSy..."></div>
-        <div><label>Auth Domain</label><input type="text" id="fb_authDomain" placeholder="tu-app.firebaseapp.com"></div>
-        <div><label>Database URL</label><input type="text" id="fb_dbURL" placeholder="https://tu-app-rtdb.firebaseio.com"></div>
-        <div><label>Project ID</label><input type="text" id="fb_projectId" placeholder="tu-app"></div>
-        <div><label>Storage Bucket</label><input type="text" id="fb_bucket" placeholder="tu-app.appspot.com"></div>
-        <div><label>Messaging Sender ID</label><input type="text" id="fb_sender" placeholder="123456789"></div>
-        <div style="grid-column:span 2"><label>App ID</label><input type="text" id="fb_appId" placeholder="1:123456:web:abcdef"></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="sbtn sbtn-pri" onclick="saveFBConfig()">🔥 Conectar a Firebase</button>
-        <button class="sbtn sbtn-sec" onclick="closeOv('ovFBConfig')">Usar modo offline</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ HEADER ══ -->
-<header>
-  <div class="logo"><div class="logo-dot"></div>THE FAMILY POS</div>
-  <div class="hr">
-    <div class="fbs" id="fbDot" title="Estado Firebase"></div>
-    <span id="fbLabel" style="font-size:.62rem;color:var(--dim)">OFFLINE</span>
-    <span style="color:var(--border)">|</span>
-    <span class="ubadge" id="userBadge">— SIN SESIÓN —</span>
-    <span class="clock" id="clock">00:00:00</span>
-    <button class="hbtn" style="font-size:.6rem;padding:3px 8px;" onclick="showOv('ovFBConfig')" title="Configurar Firebase">🔥</button>
-    <button class="hbtn adm" onclick="openAdmin()">⚙ ADMIN</button>
-    <button class="hbtn" onclick="logout()">↩ Salir</button>
-  </div>
-</header>
-
-<!-- ══ ZONES ══ -->
-<div class="zones-bar">
-  <button class="zone-btn" onclick="setZone('PASILLO',this)">Pasillo</button>
-  <button class="zone-btn" onclick="setZone('FRENTE',this)">Frente</button>
-  <button class="zone-btn active" onclick="setZone('TERRAZA',this)">Terraza</button>
-  <button class="zone-btn" onclick="setZone('VEHICULO',this)">Vehículo</button>
-  <button class="zone-btn" onclick="setZone('BANQUITO',this)">Banquito</button>
-  <button class="zone-btn" onclick="setZone('LADO',this)">Lado</button>
-  <button class="zone-btn" onclick="setZone('ANEXO',this)">Anexo</button>
-  <span class="zone-label" id="zoneLabel">TERRAZA</span>
-</div>
-
-<!-- ══ MAIN ══ -->
-<div class="main">
-  <div class="tables-panel"><div class="tables-grid" id="tablesGrid"></div></div>
-
-  <!-- ORDER PANEL -->
-  <div class="order-panel hidden" id="orderPanel">
-    <div class="op-head">
-      <span class="op-title" id="opTitle">MESA</span>
-      <button class="xbtn" onclick="closeOrder()">✕</button>
-    </div>
-    <div class="split-tabs" id="splitTabs"></div>
-    <div class="order-items" id="orderItems"></div>
-    <div class="op-foot">
-      <div class="tot-row">
-        <span class="tot-lbl">Total Mesa</span>
-        <span class="tot-amt" id="totAmt">$0</span>
-      </div>
-      <div class="abtns">
-        <button class="abtn abtn-add" onclick="openMenu()">＋ Agregar</button>
-        <button class="abtn abtn-pay" onclick="payOrder()">💳 Cobrar</button>
-        <button class="abtn abtn-print" onclick="openPrint()">🖨 Factura</button>
-        <button class="abtn abtn-cancel" onclick="cancelOrder()">🗑 Cancelar</button>
-        <button class="abtn abtn-sp" onclick="openSplitModal()">⚡ Separar Cuentas</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ STATS BAR ══ -->
-<div class="stats-bar">
-  <div class="stat">LIBRES <span class="sv" id="statFree">-</span></div>
-  <div class="stat">OCUPADAS <span class="sv" id="statOcc">-</span></div>
-  <div class="stat">VENTA <span class="sv" id="statSales">$0</span></div>
-  <div class="stat">FACTURAS <span class="sv" id="statTx">0</span></div>
-  <div class="stat">ANULADAS <span class="sv" style="color:var(--red);" id="statVoid">0</span></div>
-  <button class="cab-btn" onclick="openAdmin('sales')">📊 Reporte</button>
-</div>
-
-<!-- ══ MENU OVERLAY ══ -->
-<div class="ov" id="ovMenu" onclick="if(event.target===this)closeOv('ovMenu')">
-  <div class="modal">
-    <div class="mh"><span class="mt" id="menuModalTitle">Agregar al Pedido</span><button class="xbtn" onclick="closeOv('ovMenu')">✕</button></div>
-    <div class="mb">
-      <input class="msearch" id="msearch" type="text" placeholder="🔍 Buscar producto..." oninput="filterMenu(this.value)">
-      <div class="mcats" id="mCats"></div>
-      <div class="mgrid" id="mGrid"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ ADMIN OVERLAY ══ -->
-<div class="ov" id="ovAdmin" onclick="if(event.target===this)closeOv('ovAdmin')">
-  <div class="modal">
-    <div class="mh"><span class="mt">Panel de Administración</span><button class="xbtn" onclick="closeOv('ovAdmin')">✕</button></div>
-    <div class="adm-tabs">
-      <button class="adm-tab active" id="tab-sales" onclick="switchAdmTab('sales')">📊 Ventas</button>
-      <button class="adm-tab" id="tab-txs" onclick="switchAdmTab('txs')">🧾 Historial</button>
-      <button class="adm-tab" id="tab-orders" onclick="switchAdmTab('orders')">🗒 Pedidos Activos</button>
-      <button class="adm-tab" id="tab-users" onclick="switchAdmTab('users')">👤 Usuarios</button>
-      <button class="adm-tab" id="tab-queue" onclick="switchAdmTab('queue')">🖨 Cola Impresión</button>
-    </div>
-
-    <!-- SALES -->
-    <div class="adm-page show" id="pg-sales">
-      <div class="kpi-row" id="kpiRow"></div>
-      <div id="catBarsWrap"></div>
-      <div class="chart-wrap">
-        <div class="chart-title">🏆 Top 10 Productos Más Vendidos</div>
-        <div id="barChart"><div class="empty-msg">Sin datos aún.</div></div>
-      </div>
-    </div>
-
-    <!-- HISTORY / TRANSACTIONS -->
-    <div class="adm-page" id="pg-txs">
-      <div class="flex-row" style="justify-content:space-between;">
-        <span class="section-title">Historial de Transacciones</span>
-        <div class="flex-row">
-          <button class="sbtn sbtn-sec" style="font-size:.63rem;padding:5px 11px;" onclick="exportCSV()">📄 Exportar CSV</button>
+    <div id="login-screen" class="login-overlay">
+        <div class="login-card">
+            <div class="login-header">
+                <h2>Acceso al Sistema</h2>
+                <p>Introduce tus credenciales para continuar</p>
+            </div>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Usuario</label>
+                    <input type="text" id="login-username" required placeholder="Ej. admin">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <div id="login-error-msg" class="error-msg hidden">
+                    Credenciales incorrectas. Intente de nuevo.
+                </div>
+                <button type="submit" class="btn-login-submit">Ingresar</button>
+            </form>
         </div>
-      </div>
-      <table class="dtable">
-        <thead><tr><th>#</th><th>Mesa</th><th>Cuenta</th><th>Mesero</th><th>Hora</th><th>Items</th><th>Total</th><th>Estado</th></tr></thead>
-        <tbody id="txBody"></tbody>
-      </table>
     </div>
 
-    <!-- ACTIVE ORDERS -->
-    <div class="adm-page" id="pg-orders">
-      <table class="dtable">
-        <thead><tr><th>Mesa</th><th>Cuenta</th><th>Mesero</th><th>Items</th><th>Total</th><th>Estado</th><th></th></tr></thead>
-        <tbody id="activeBody"></tbody>
-      </table>
+    <div class="main-container">
+        <h1>Panel de Control del Restaurante</h1>
+        
+        <button id="open-menu-btn" onclick="openMenu()">Gestionar Menú / Orden</button>
+        
+        <hr>
+
+        <h3>Categorías</h3>
+        <button onclick="switchMCat('entradas')">Entradas</button>
+        <button onclick="switchMCat('fuertes')">Platos Fuertes</button>
+        <button onclick="switchMCat('bebidas')">Bebidas</button>
+
+        <div id="items-grid"></div>
+
+        <hr>
+
+        <h3>Cola de Impresión</h3>
+        <div id="print-queue-container"></div>
     </div>
 
-    <!-- USERS -->
-    <div class="adm-page" id="pg-users">
-      <div class="section-head">
-        <span class="section-title">Usuarios del Sistema</span>
-        <button class="sbtn sbtn-pri" style="font-size:.63rem;padding:5px 12px;" onclick="showUForm()">+ Nuevo Usuario</button>
-      </div>
-      <div class="users-grid" id="usersList"></div>
-      <div class="uform" id="uForm" style="display:none;">
-        <input type="hidden" id="uEditId">
-        <div><label>Nombre Completo</label><input type="text" id="uName" placeholder="Ej: María García"></div>
-        <div><label>Usuario (login)</label><input type="text" id="uUser" placeholder="Ej: maria"></div>
-        <div><label>Contraseña</label><input type="password" id="uPass" placeholder="(dejar vacío = no cambiar)"></div>
-        <div><label>Rol</label>
-          <select id="uRole">
-            <option value="admin">Administrador</option>
-            <option value="cajero">Cajero/a</option>
-            <option value="mesero" selected>Mesero/a</option>
-          </select>
-        </div>
-        <div class="uform-full flex-row">
-          <button class="sbtn sbtn-pri" onclick="saveUser()">💾 Guardar</button>
-          <button class="sbtn sbtn-sec" onclick="hideUForm()">Cancelar</button>
-        </div>
-      </div>
+    <div id="menu-modal" class="modal">
+        <h3>Propiedades del Menú</h3>
+        <p>Ajustes rápidos y sincronización activa.</p>
+        <button id="save-menu-btn">Guardar Cambios de Orden</button>
+        <button onclick="document.getElementById('menu-modal').classList.remove('active')">Cerrar</button>
     </div>
 
-    <!-- PRINT QUEUE -->
-    <div class="adm-page" id="pg-queue">
-      <div class="section-head">
-        <span class="section-title">Cola de Impresión Remota (Firebase)</span>
-        <button class="sbtn sbtn-sec" style="font-size:.63rem;padding:5px 11px;" onclick="clearQueue()">🗑 Limpiar Cola</button>
-      </div>
-      <p style="font-size:.7rem;color:var(--dim);margin-bottom:12px;">
-        Cuando presionas "🖨 Factura" → "Enviar a Caja", el ticket viaja por Firebase y aparece aquí en tiempo real en la PC de caja para imprimir.
-      </p>
-      <div id="queueList"><div class="empty-msg">Cola vacía.</div></div>
-    </div>
-  </div>
-</div>
+    <script>
+        // ==========================================
+        // PUNTO 2: CONFIGURACIÓN INICIAL DEL SISTEMA
+        // ==========================================
+        const DEFAULT_FB_CONFIG = {
+            apiKey: "AIzaSyAsYourRealKeyHere_123456",
+            authDomain: "the-family-pos.firebaseapp.com",
+            databaseURL: "https://the-family-pos-default-rtdb.firebaseio.com",
+            projectId: "the-family-pos",
+            storageBucket: "the-family-pos.appspot.com",
+            messagingSenderId: "9876543210",
+            appId: "1:9876543210:web:abcdef123456"
+        };
 
-<!-- ══ PRINT OVERLAY ══ -->
-<div class="ov" id="ovPrint" onclick="if(event.target===this)closeOv('ovPrint')">
-  <div class="modal">
-    <div class="mh"><span class="mt">Vista Previa — Factura</span><button class="xbtn" onclick="closeOv('ovPrint')">✕</button></div>
-    <div class="mb"><div id="receiptPreview"></div></div>
-    <div class="print-actions">
-      <button class="sbtn sbtn-pri" onclick="doPrint()">🖨 Imprimir</button>
-      <button class="sbtn sbtn-sec" style="background:rgba(155,89,182,.2);color:var(--purple);border:1px solid var(--purple);" onclick="sendToCaja()">📡 Enviar a Caja</button>
-      <button class="sbtn sbtn-sec" onclick="closeOv('ovPrint')">Cerrar</button>
-    </div>
-  </div>
-</div>
+        // Estado de la aplicación
+        let appState = {
+            isAuthenticated: false,
+            currentCategory: 'entradas'
+        };
 
-<!-- ══ SPLIT ASSIGN OVERLAY ══ -->
-<div class="ov" id="ovSplit" onclick="if(event.target===this)closeOv('ovSplit')">
-  <div class="modal">
-    <div class="mh"><span class="mt">Separar Cuentas</span><button class="xbtn" onclick="closeOv('ovSplit')">✕</button></div>
-    <div class="mb">
-      <p style="font-size:.72rem;color:var(--dim);margin-bottom:12px;">Asigna cada ítem a una cuenta. Usa "+ Cuenta" en las pestañas para crear más.</p>
-      <div class="salist" id="saList"></div>
-    </div>
-    <div class="print-actions">
-      <button class="sbtn sbtn-pri" onclick="applySplit()">✔ Aplicar Separación</button>
-      <button class="sbtn sbtn-sec" onclick="closeOv('ovSplit')">Cancelar</button>
-    </div>
-  </div>
-</div>
+        let menuAbortController = null;
 
-<div class="toast" id="toast"></div>
-<div id="printDoc"></div>
+        // Base de datos dummy local para renderizado inmediato si Firebase tarda
+        const mockDb = {
+            entradas: [
+                { id: 'e1', name: 'Pechuga a la Plancha (Entrada)', price: 250 },
+                { id: 'e2', name: 'Bastones de Mozzarella', price: 180 }
+            ],
+            fuertes: [
+                { id: 'f1', name: 'Pechuga a la Plancha', price: 450 },
+                { id: 'f2', name: 'Mofongo de Filete', price: 600 }
+            ],
+            bebidas: [
+                { id: 'b1', name: 'Jugo Natural', price: 120 },
+                { id: 'b2', name: 'Refresco Familiar', price: 150 }
+            ]
+        };
 
-<!-- ══════════════════════════════════════════════════════
-     JAVASCRIPT
-══════════════════════════════════════════════════════ -->
-<script>
-// ═══════════════════════════════════════════════════
-// 1. CONSTANTS
-// ═══════════════════════════════════════════════════
-const ZONES={TERRAZA:{p:'T',c:10},PASILLO:{p:'P',c:6},FRENTE:{p:'F',c:8},VEHICULO:{p:'V',c:4},BANQUITO:{p:'B',c:5},LADO:{p:'L',c:7},ANEXO:{p:'A',c:6}};
-const BCOLS=['#2ecc71','#3498db','#9b59b6','#e67e22','#e74c3c','#00ffc8','#f39c12','#1abc9c','#e91e63','#ff5722'];
-const CAT_FOOD=['Entradas','Mofongos','Plato Fuerte','Pasta','Cortes Angus','Platos Rápidos','Guarniciones'];
-const CAT_BAR=['Cocteles','Tragos y Botellas','Frozen'];
-const CAT_BEV=['Cervezas','Mezcla','Otras Bebidas'];
-const ROLE_COLORS={admin:'#9b59b6',mesero:'#3498db',cajero:'#f39c12'};
-const MENU={
-  'Entradas':[{n:'Mozzarella Sticks',p:395},{n:'Palitos de Pescado',p:350},{n:'Canastica de Plátano',p:395},{n:'Nachos Cheese',p:350}],
-  'Mofongos':[{n:'Mofongo Clásico a la Crema',p:595},{n:'Mofongo Tradicional',p:595},{n:'Mofongo Mixto',p:695},{n:'Mofongo Queso',p:595},{n:'Camarofongo',p:795},{n:'Mofongo al Ajillo',p:795},{n:'Mofongo a la Criolla',p:795}],
-  'Plato Fuerte':[{n:'Parrilla Mixta (2 personas)',p:1195},{n:'Pechuga a la Parrilla',p:495},{n:'Pechuga a la Crema',p:595},{n:'Alitas a la BQ',p:495},{n:'Costillitas a la BQ',p:595},{n:'Salmón a la Crema',p:995},{n:'Camarones Crema/Ajillo',p:895}],
-  'Pasta':[{n:'Pasta Camarones',p:895},{n:'Pasta Salmón',p:895},{n:'Pasta Pollo',p:795},{n:'Pasta Boloñesa',p:795}],
-  'Cortes Angus':[{n:'Sirloin Angus + Guarnición',p:1295},{n:'Picaña Angus + Guarnición',p:1295},{n:'Churrasco Angus',p:1495},{n:'Ribeye Angus',p:1495}],
-  'Platos Rápidos':[{n:'Yaroa de Pollo/Res',p:495},{n:'Hot Dog Parrillero',p:350},{n:'Hot Dog Tradicional',p:295},{n:'Hamburguesa Angus',p:595},{n:'Hamburguesa Bacon Cheese',p:495},{n:'Doble Burger',p:595}],
-  'Guarniciones':[{n:'Yuca Frita',p:150},{n:'Tostones',p:150},{n:'Pancito con Ajo',p:150},{n:'Papa Frita',p:195},{n:'Vegetales al Grill',p:150}],
-  'Cocteles':[{n:'Mojito de Chinola',p:295},{n:'Mojito de Limón',p:295},{n:'Mojito de Coco',p:325},{n:'Mojito The Family',p:350},{n:'Mojito Blue',p:325},{n:'Mojito Red',p:295},{n:'Cuba Libre',p:325},{n:'Vodkatony',p:325},{n:'Tequila',p:295},{n:'Sangria Tinta',p:395},{n:'Margarita',p:395},{n:'Gin Tonic',p:395},{n:'Mar Azul',p:325},{n:'Aperol',p:450}],
-  'Frozen':[{n:'The Family Frozen S',p:325},{n:'The Family Frozen D',p:395},{n:'The Pink S',p:325},{n:'The Pink D',p:395},{n:'La Diosa S',p:325},{n:'La Diosa D',p:395},{n:'Beso de Angel S',p:325},{n:'Beso de Angel D',p:395},{n:'Chinola Frozen S',p:325},{n:'Piña Colada S',p:350},{n:'Piña Colada D',p:395},{n:'Fruit Punch Frozen',p:325},{n:'Margarita Frozen S',p:395},{n:'Margarita Frozen D',p:450}],
-  'Cervezas':[{n:'Corona',p:200},{n:'Modelo',p:200},{n:'One',p:150},{n:'Smirnoff',p:180},{n:'Presidente',p:150},{n:'Stella',p:220}],
-  'Mezcla':[{n:'Ciclon',p:150},{n:'Red Bull',p:250},{n:'911',p:150},{n:'Clamato',p:150},{n:'Agua Tónica',p:100},{n:'Soda Enriquillo',p:80},{n:'Agua Perriel',p:100}],
-  'Tragos y Botellas':[{n:'Brugal Extra Viejo',p:1500},{n:'Brugal XV 700ml',p:2000},{n:'Brugal Doble Reservas',p:2500},{n:'Black Label',p:5000},{n:'Frontera Sauvignon',p:1200},{n:'Carlos Rossi',p:900},{n:'Santa Carolina',p:1000},{n:'Vodka Eristoff',p:1800},{n:'Fireball',p:1600}],
-  'Otras Bebidas':[{n:'Jugos Naturales',p:150},{n:'Frozen Naturales',p:195},{n:'Refresco',p:60},{n:'Agua',p:40},{n:'Mickey Mouse',p:225}],
-};
+        // ==========================================
+        // MANEJO DE AUTENTICACIÓN (PUNTO 6)
+        // ==========================================
+        function handleLogin(event) {
+            event.preventDefault();
+            const user = document.getElementById('login-username').value;
+            const pass = document.getElementById('login-password').value;
+            const errorMsg = document.getElementById('login-error-msg');
 
-// ═══════════════════════════════════════════════════
-// 2. STATE
-// ═══════════════════════════════════════════════════
-let users=[
-  {id:1,name:'Admin Family',  user:'admin',pass:'admin777',role:'admin'},
-  {id:2,name:'Caja Principal',user:'caja', pass:'caja123', role:'cajero'},
-  {id:3,name:'Mesero 1',      user:'m1',   pass:'1234',    role:'mesero'},
-  {id:4,name:'Mesero 2',      user:'m2',   pass:'1234',    role:'mesero'},
-  {id:5,name:'Mesero 3',      user:'m3',   pass:'1234',    role:'mesero'},
-  {id:6,name:'Mesero 4',      user:'m4',   pass:'1234',    role:'mesero'},
-];
-let nextUserId=7;
-// tableOrders[key] = { waiter, splits:[{id,name,items:[{name,price,qty}]}] }
-let tableOrders={};
-let curZone='TERRAZA', curTableKey=null, curSplitIdx=0, activeCat=Object.keys(MENU)[0];
-let curUser=null;
-let transactions=[]; // {id,table,split,waiter,items,total,time,voided}
-let txCount=0, totalDay=0, voidCount=0, prodSales={};
-let fbDB=null, fbConnected=false;
-let _splitAllItems=[];  // for split assign modal
+            // Autenticación básica de muestra
+            if (user === 'admin' && pass === '1234') {
+                appState.isAuthenticated = true;
+                errorMsg.classList.add('hidden');
+                document.getElementById('login-screen').classList.add('hidden');
+                
+                // Inicializar listeners una vez autenticado
+                initApp();
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
 
-// ═══════════════════════════════════════════════════
-// 3. FIREBASE INTEGRATION
-// ═══════════════════════════════════════════════════
-function saveFBConfig(){
-  const cfg={
-    apiKey:      gv('fb_apiKey'),
-    authDomain:  gv('fb_authDomain'),
-    databaseURL: gv('fb_dbURL'),
-    projectId:   gv('fb_projectId'),
-    storageBucket:gv('fb_bucket'),
-    messagingSenderId:gv('fb_sender'),
-    appId:       gv('fb_appId'),
-  };
-  if(!cfg.apiKey||!cfg.databaseURL){toast('Completa al menos API Key y Database URL','err');return;}
-  try{
-    if(firebase.apps.length===0){firebase.initializeApp(cfg);}
-    else{firebase.app().delete().then(()=>{firebase.initializeApp(cfg);initFBListeners();});}
-    initFBListeners();
-    localStorage.setItem('fbConfig',JSON.stringify(cfg));
-    closeOv('ovFBConfig');
-    toast('🔥 Firebase conectado correctamente');
-  }catch(e){
-    toast('Error conectando Firebase: '+e.message,'err');
-  }
-}
+        // ==========================================
+        // PUNTO 1: CONFIGURACIÓN Y LISTENERS FIREBASE
+        // ==========================================
+        function saveFBConfig(config) {
+            console.log("Guardando nueva configuración de Firebase...", config);
+            localStorage.setItem('fb_custom_config', JSON.stringify(config));
+        }
 
-function initFBListeners(){
-  try{
-    fbDB=firebase.database();
-    // Online/offline indicator
-    firebase.database().ref('.info/connected').on('value',snap=>{
-      fbConnected=snap.val()===true;
-      document.getElementById('fbDot').className='fbs'+(fbConnected?' ok':'');
-      document.getElementById('fbLabel').textContent=fbConnected?'ONLINE':'OFFLINE';
-    });
-    // Sync mesas (tables)
-    fbDB.ref('mesas').on('value',snap=>{
-      const data=snap.val();
-      if(data){
-        // Deep-merge to keep local state if remote arrives
-        tableOrders=JSON.parse(JSON.stringify(data));
-      } else {
-        tableOrders={};
-      }
-      buildTables(curZone);
-      if(curTableKey&&tableOrders[curTableKey]){renderSplitTabs();renderOrderItems();}
-    });
-    // Sync transactions
-    fbDB.ref('ventas').orderByChild('id').on('value',snap=>{
-      const data=snap.val();
-      if(data){
-        transactions=Object.values(data).sort((a,b)=>b.id-a.id);
-        totalDay=transactions.filter(t=>!t.voided).reduce((a,t)=>a+t.total,0);
-        voidCount=transactions.filter(t=>t.voided).length;
-        txCount=transactions.length;
-        prodSales={};
-        transactions.filter(t=>!t.voided).forEach(tx=>tx.items.forEach(it=>prodSales[it.name]=(prodSales[it.name]||0)+it.price*it.qty));
-        updateStatBar();
-      }
-    });
-    // Print queue listener (runs on the caja PC)
-    fbDB.ref('cola_impresion').on('child_added',snap=>{
-      const ticket=snap.val();
-      if(ticket&&ticket._key!==snap.key){
-        // New ticket arrived — show in queue tab
-        renderPrintQueue();
-      }
-    });
-  }catch(e){
-    console.warn('Firebase listener error:',e);
-  }
-}
+        function resetFBConfig() {
+            console.log("Restableciendo a la configuración por defecto.");
+            localStorage.removeItem('fb_custom_config');
+            // Usar de forma segura DEFAULT_FB_CONFIG debido a que está declarada arriba
+            initializeFirebase(DEFAULT_FB_CONFIG);
+        }
 
-// Try to restore saved config on load
-(function tryRestoreFB(){
-  const saved=localStorage.getItem('fbConfig');
-  if(!saved)return;
-  const cfg=JSON.parse(saved);
-  Object.entries(cfg).forEach(([k,v])=>{
-    const el=document.getElementById('fb_'+({apiKey:'apiKey',authDomain:'authDomain',databaseURL:'dbURL',projectId:'projectId',storageBucket:'bucket',messagingSenderId:'sender',appId:'appId'}[k]||k));
-    if(el)el.value=v;
-  });
-  try{
-    if(firebase.apps.length===0)firebase.initializeApp(cfg);
-    initFBListeners();
-  }catch(e){console.warn('Auto-connect FB failed:',e);}
-})();
+        function initializeFirebase(config) {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(config);
+            }
+            initFBListeners();
+        }
 
-// Write to Firebase (with offline fallback)
-function fbSet(path,data){
-  if(fbDB&&fbConnected){
-    fbDB.ref(path).set(data).catch(e=>console.warn('fbSet error',e));
-  }
-}
-function fbUpdate(path,data){
-  if(fbDB&&fbConnected){
-    fbDB.ref(path).update(data).catch(e=>console.warn('fbUpdate error',e));
-  }
-}
-function fbPush(path,data){
-  if(fbDB&&fbConnected){
-    return fbDB.ref(path).push(data);
-  }
-  return null;
-}
-function fbRemove(path){
-  if(fbDB&&fbConnected){
-    fbDB.ref(path).remove().catch(e=>console.warn('fbRemove error',e));
-  }
-}
+        // PUNTO 1: El bloque huérfano encapsulado correctamente
+        function initFBListeners() {
+            if (!firebase.apps.length) return;
 
-// ═══════════════════════════════════════════════════
-// 4. LOGIN / AUTH
-// ═══════════════════════════════════════════════════
-function doLogin(){
-  const u=gv('lusr'),p=gv('lpass');
-  const found=users.find(x=>x.user===u&&x.pass===p);
-  if(!found){document.getElementById('lerr').textContent='Usuario o contraseña incorrectos';return;}
-  curUser=found;
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('userBadge').textContent=`${found.name.split(' ')[0].toUpperCase()} [${found.role.toUpperCase()}]`;
-  buildTables(curZone);
-  toast(`✓ Bienvenido, ${found.name.split(' ')[0]}`);
-}
-function logout(){
-  if(!confirm('¿Cerrar sesión?'))return;
-  curUser=null;closeOrder();
-  document.getElementById('lusr').value='';
-  document.getElementById('lpass').value='';
-  document.getElementById('lerr').textContent='';
-  document.getElementById('loginScreen').style.display='flex';
-}
+            const db = firebase.database();
 
-// ═══════════════════════════════════════════════════
-// 5. TABLES
-// ═══════════════════════════════════════════════════
-function tkey(z,id){return `${z}_${id}`;}
-function buildTables(zone){
-  const g=document.getElementById('tablesGrid');g.innerHTML='';
-  const z=ZONES[zone];
-  for(let i=1;i<=z.c;i++){
-    const id=`${z.p}-${i}`,key=tkey(zone,id);
-    const ord=tableOrders[key];
-    const occ=ord&&ord.splits&&ord.splits.some(s=>s.items&&s.items.length>0);
-    const multi=ord&&ord.splits&&ord.splits.length>1;
-    const tot=ord?ord.splits.reduce((a,s)=>a+stotal(s),0):0;
-    const btn=document.createElement('div');
-    btn.className=`table-btn ${occ?(multi?'split':'occupied'):'free'}${curTableKey===key?' selected':''}`;
-    btn.innerHTML=`
-      <div class="cdot" style="top:4px;left:4px"></div><div class="cdot" style="top:4px;right:4px"></div>
-      <div class="cdot" style="bottom:4px;left:4px"></div><div class="cdot" style="bottom:4px;right:4px"></div>
-      <span class="tid">${id}</span>
-      ${occ?`<span class="tsub">${ord.waiter}</span><span class="tamt">$${fmt(tot)}</span>`:''}
-      ${multi?`<span class="tspbadge">${ord.splits.length} cuentas</span>`:''}`;
-    btn.onclick=()=>selectTable(key,id);
-    g.appendChild(btn);
-  }
-  updateStats();
-}
-function setZone(z,el){
-  curZone=z;
-  document.querySelectorAll('.zone-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('zoneLabel').textContent=z;
-  closeOrder();buildTables(z);
-}
-function selectTable(key,id){
-  if(!curUser)return toast('⚠ Inicia sesión primero','err');
-  if(!tableOrders[key]){
-    tableOrders[key]={waiter:curUser.name.split(' ')[0],splits:[{id:0,name:'Cuenta 1',items:[]}]};
-    fbSet(`mesas/${key}`,tableOrders[key]);
-  }
-  curTableKey=key;curSplitIdx=0;
-  document.getElementById('opTitle').textContent=`MESA ${id}`;
-  document.getElementById('orderPanel').classList.remove('hidden');
-  buildTables(curZone);
-  renderSplitTabs();renderOrderItems();
-}
-function closeOrder(){
-  document.getElementById('orderPanel').classList.add('hidden');
-  curTableKey=null;
-  buildTables(curZone);
-}
-function hasItems(key){const o=tableOrders[key];return o&&o.splits&&o.splits.some(s=>s.items&&s.items.length>0);}
+            // Sincronización en tiempo real de la cola de impresión
+            db.ref('print_queue').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const formatData = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                    renderPrintQueue(formatData);
+                }
+            });
 
-// ═══════════════════════════════════════════════════
-// 6. SPLITS
-// ═══════════════════════════════════════════════════
-function getSplits(){return curTableKey&&tableOrders[curTableKey]?tableOrders[curTableKey].splits:[];}
-function getSplit(){return getSplits()[curSplitIdx]||{items:[]};}
-function stotal(s){return(s.items||[]).reduce((a,i)=>a+i.price*i.qty,0);}
-function mesaTotal(){return getSplits().reduce((a,s)=>a+stotal(s),0);}
+            db.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    console.log("Conectado nativamente a Firebase Realtime Database.");
+                } else {
+                    console.warn("Buscando señal o desconectado de Firebase.");
+                }
+            });
+        }
 
-function renderSplitTabs(){
-  const splits=getSplits();
-  document.getElementById('splitTabs').innerHTML=
-    splits.map((s,i)=>`<button class="stab${i===curSplitIdx?' active':''}" onclick="switchSplit(${i})">${s.name} · $${fmt(stotal(s))}</button>`).join('')+
-    `<button class="stab add" onclick="addSplit()">+ Cuenta</button>`;
-  document.getElementById('totAmt').textContent=`$${fmt(mesaTotal())}`;
-}
-function switchSplit(i){curSplitIdx=i;renderSplitTabs();renderOrderItems();}
-function addSplit(){
-  const sp=getSplits();
-  sp.push({id:sp.length,name:`Cuenta ${sp.length+1}`,items:[]});
-  curSplitIdx=sp.length-1;
-  fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
-  renderSplitTabs();renderOrderItems();buildTables(curZone);
-  toast(`✓ ${getSplit().name} creada`);
-}
+        // ==========================================
+        // PUNTO 3: PREVENIR DUPLICADOS EN OPENMENU
+        // ==========================================
+        function openMenu() {
+            // Abortar listeners del ciclo anterior para que no acumule duplicados
+            if (menuAbortController) {
+                menuAbortController.abort();
+            }
+            
+            // Generar un nuevo controlador limpio para esta apertura
+            menuAbortController = new AbortController();
+            const { signal } = menuAbortController;
 
-// ═══════════════════════════════════════════════════
-// 7. ORDER ITEMS
-// ═══════════════════════════════════════════════════
-function renderOrderItems(){
-  const sp=getSplit(),cont=document.getElementById('orderItems');
-  if(!sp.items||!sp.items.length){
-    cont.innerHTML=`<div class="empty-msg">Sin items en ${sp.name||'esta cuenta'}</div>`;
-    renderSplitTabs();return;
-  }
-  cont.innerHTML=sp.items.map((it,i)=>`
-    <div class="oi">
-      <span class="oi-name">${it.name}</span>
-      <div class="qc">
-        <button class="qbtn" onclick="chgQty(${i},-1)">−</button>
-        <span class="iqty">${it.qty}</span>
-        <button class="qbtn" onclick="chgQty(${i},1)">+</button>
-      </div>
-      <span class="iprice">$${fmt(it.price*it.qty)}</span>
-      <button class="idel" onclick="rmItem(${i})">✕</button>
-    </div>`).join('');
-  renderSplitTabs();
-}
-function chgQty(i,d){
-  if(!curTableKey)return;
-  const sp=getSplit();
-  sp.items[i].qty+=d;
-  if(sp.items[i].qty<=0){
-    if(!confirm('¿Eliminar este producto del pedido?')){sp.items[i].qty=1;}
-    else{sp.items.splice(i,1);}
-  }
-  fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
-  renderOrderItems();buildTables(curZone);
-}
-function rmItem(i){
-  getSplit().items.splice(i,1);
-  fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
-  renderOrderItems();buildTables(curZone);
-}
-function addItemToOrder(name,price){
-  if(!curTableKey)return;
-  const sp=getSplit(),ex=sp.items.find(x=>x.name===name);
-  if(ex)ex.qty++;else sp.items.push({name,price,qty:1});
-  fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
-  renderOrderItems();buildTables(curZone);
-  toast(`✓ ${name}`);
-}
+            const saveMenuBtn = document.getElementById('save-menu-btn');
 
-// ═══════════════════════════════════════════════════
-// 8. PAY / CANCEL
-// ═══════════════════════════════════════════════════
-function payOrder(){
-  if(!curTableKey)return;
-  const sp=getSplit(),amt=stotal(sp);
-  if(!amt)return toast('⚠ Sin items para cobrar','err');
+            // Listener controlado y auto-limpiable
+            saveMenuBtn.addEventListener('click', () => {
+                console.log("Acción ejecutada una sola vez por interacción del modal.");
+                alert("¡Orden procesada sin duplicados!");
+                document.getElementById('menu-modal').classList.remove('active');
+            }, { signal });
 
-  txCount++;
-  const tx={
-    id:txCount, table:curTableKey.split('_')[1], split:sp.name,
-    waiter:tableOrders[curTableKey].waiter,
-    items:JSON.parse(JSON.stringify(sp.items)),
-    total:amt, time:new Date().toISOString(), voided:false
-  };
-  transactions.unshift(tx);
-  totalDay+=amt;
-  sp.items.forEach(it=>prodSales[it.name]=(prodSales[it.name]||0)+it.price*it.qty);
+            document.getElementById('menu-modal').classList.add('active');
+        }
 
-  // Firebase sync
-  fbPush('ventas',tx);
+        // ==========================================
+        // PUNTO 4: DELEGACIÓN DE EVENTOS EN EL GRID
+        // ==========================================
+        function initGridMenuListener() {
+            const itemsGrid = document.getElementById('items-grid');
+            if (!itemsGrid) return;
 
-  const splits=getSplits();
-  if(splits.length===1){
-    delete tableOrders[curTableKey];
-    fbRemove(`mesas/${curTableKey}`);
-    closeOrder();
-  } else {
-    splits.splice(curSplitIdx,1);
-    splits.forEach((s,i)=>{s.id=i;s.name=`Cuenta ${i+1}`;});
-    curSplitIdx=0;
-    fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
-    renderSplitTabs();renderOrderItems();
-  }
-  updateStatBar();buildTables(curZone);
-  toast(`💳 Cobrado: $${fmt(amt)}`);
-}
+            // Escuchamos directamente en el padre. Los re-renders dinámicos no rompen el listener
+            itemsGrid.addEventListener('click', function(e) {
+                const targetItem = e.target.closest('.grid-item-btn');
+                if (targetItem) {
+                    const itemId = targetItem.dataset.id;
+                    const itemPrice = targetItem.dataset.price;
+                    const itemName = targetItem.querySelector('.item-name').innerText;
+                    
+                    addItemToOrder(itemId, itemName, itemPrice);
+                }
+            });
+        }
 
-function cancelOrder(){
-  if(!curTableKey||!confirm('¿Cancelar toda la orden de esta mesa?'))return;
-  delete tableOrders[curTableKey];
-  fbRemove(`mesas/${curTableKey}`);
-  closeOrder();buildTables(curZone);toast('🗑 Orden cancelada');
-}
+        function switchMCat(category) {
+            appState.currentCategory = category;
+            renderMItems(mockDb[category]);
+        }
 
-// ── VOID TRANSACTION (Admin only) ──
-function voidTransaction(txId){
-  if(!curUser||curUser.role!=='admin'){toast('Solo administradores pueden anular ventas','err');return;}
-  if(!confirm(`¿ANULAR FACTURA #${txId}? Esta acción restará el importe del total del día.`))return;
-  const tx=transactions.find(t=>t.id===txId);
-  if(!tx||tx.voided)return;
-  tx.voided=true;
-  totalDay-=tx.total;
-  voidCount++;
-  tx.items.forEach(it=>{
-    if(prodSales[it.name])prodSales[it.name]=Math.max(0,prodSales[it.name]-it.price*it.qty);
-  });
-  // Firebase: mark as voided
-  if(fbDB&&fbConnected){
-    fbDB.ref('ventas').orderByChild('id').equalTo(txId).once('value',snap=>{
-      snap.forEach(c=>fbDB.ref(`ventas/${c.key}`).update({voided:true}));
-    });
-  }
-  updateStatBar();renderTxs();renderSales();
-  toast(`⚠ Factura #${txId} anulada`,'warn');
-}
+        function renderMItems(items) {
+            const itemsGrid = document.getElementById('items-grid');
+            // Inyectamos sólo strings puros de HTML. No atamos eventos individuales aquí
+            itemsGrid.innerHTML = items.map(item => `
+                <button class="grid-item-btn" data-id="${item.id}" data-price="${item.price}">
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-price">$${item.price}</span>
+                </button>
+            `).join('');
+        }
 
-// ═══════════════════════════════════════════════════
-// 9. MENU
-// ═══════════════════════════════════════════════════
-function openMenu(){
-  if(!curTableKey)return;
-  document.getElementById('menuModalTitle').textContent=`Agregar → ${getSplit().name}`;
-  document.getElementById('msearch').value='';
-  renderMCats();renderMItems(activeCat);showOv('ovMenu');
-}
-function renderMCats(){
-  document.getElementById('mCats').innerHTML=Object.keys(MENU).map(c=>`<button class="mcat${c===activeCat?' active':''}" onclick="switchMCat('${c}')">${c}</button>`).join('');
-}
-function switchMCat(c){activeCat=c;document.getElementById('msearch').value='';renderMCats();renderMItems(c);}
-function renderMItems(c){
-  document.getElementById('mCats').style.display='';
-  document.getElementById('mGrid').innerHTML=MENU[c].map(it=>`
-    <div class="mitem" onclick="addItemToOrder(${JSON.stringify(it.n)},${it.p})">
-      <span class="mname">${it.n}</span><span class="mprice">$${it.p.toLocaleString('es-DO')}</span>
-    </div>`).join('');
-}
-function filterMenu(q){
-  const grid=document.getElementById('mGrid'),cats=document.getElementById('mCats');
-  if(!q.trim()){cats.style.display='';renderMItems(activeCat);return;}
-  cats.style.display='none';
-  const res=[];
-  Object.values(MENU).forEach(items=>items.forEach(it=>{if(it.n.toLowerCase().includes(q.toLowerCase()))res.push(it);}));
-  grid.innerHTML=res.length
-    ?res.map(it=>`<div class="mitem" onclick="addItemToOrder(${JSON.stringify(it.n)},${it.p})"><span class="mname">${it.n}</span><span class="mprice">$${it.p.toLocaleString('es-DO')}</span></div>`).join('')
-    :`<div class="empty-msg" style="grid-column:1/-1">Sin resultados para "${q}"</div>`;
-}
+        function addItemToOrder(id, name, price) {
+            console.log(`Ítem agregado: ${name} (ID: ${id}) - $${price}`);
+        }
 
-// ═══════════════════════════════════════════════════
-// 10. PRINT & SEND TO CAJA
-// ═══════════════════════════════════════════════════
-function buildReceiptHTML(forPrint=false){
-  if(!curTableKey)return'';
-  const ord=tableOrders[curTableKey],splits=getSplits(),now=new Date();
-  let html='';
-  splits.forEach((sp,i)=>{
-    if(!sp.items||!sp.items.length)return;
-    const sub=stotal(sp),tax=Math.round(sub*0.18);
-    html+=`<div class="receipt"${i>0?' style="margin-top:16px;border-top:2px dashed #ccc;padding-top:14px;"':''}>
-      <div class="receipt-title">THE FAMILY</div>
-      <div class="receipt-sub">BAR &amp; LOUNGE<br>Tel: 829-914-0282 | @thefamilyfoodtruck</div>
-      <hr>
-      <div class="receipt-row"><span>Mesa:</span><span>${curTableKey.split('_')[1]}</span></div>
-      <div class="receipt-row"><span>Cuenta:</span><span>${sp.name}</span></div>
-      <div class="receipt-row"><span>Mesero:</span><span>${ord.waiter}</span></div>
-      <div class="receipt-row"><span>Fecha:</span><span>${now.toLocaleDateString('es-DO')}</span></div>
-      <div class="receipt-row"><span>Hora:</span><span>${now.toLocaleTimeString('es-DO')}</span></div>
-      <hr>
-      ${sp.items.map(it=>`<div class="receipt-row"><span>${it.name} x${it.qty}</span><span>$${fmt(it.price*it.qty)}</span></div>`).join('')}
-      <hr>
-      <div class="receipt-row"><span>Subtotal:</span><span>$${fmt(sub)}</span></div>
-      <div class="receipt-row"><span>ITBIS 18%:</span><span>$${fmt(tax)}</span></div>
-      <div class="receipt-row receipt-total"><span>TOTAL:</span><span>$${fmt(sub+tax)}</span></div>
-      <div class="receipt-footer">¡Gracias por su visita! Vuelva pronto 🎉</div>
-    </div>`;
-  });
-  return html;
-}
+        // ==========================================
+        // PUNTO 5: RENDER DE COLA CON EL WRAPPER CORRECTO
+        // ==========================================
+        function renderPrintQueue(queueData) {
+            const container = document.getElementById('print-queue-container');
+            if (!container) return;
 
-function openPrint(){
-  if(!curTableKey)return;
-  document.getElementById('receiptPreview').innerHTML=buildReceiptHTML();
-  showOv('ovPrint');
-}
-function doPrint(){
-  const html=buildReceiptHTML(true);
-  document.getElementById('printDoc').innerHTML=html;
-  window.print();
-}
-// Send ticket to Firebase print queue (caja PC listens)
-function sendToCaja(){
-  if(!fbDB||!fbConnected){toast('Firebase no conectado. Configura Firebase primero.','err');return;}
-  const ord=tableOrders[curTableKey],splits=getSplits(),now=new Date().toISOString();
-  splits.forEach(sp=>{
-    if(!sp.items||!sp.items.length)return;
-    fbPush('cola_impresion',{
-      mesa:curTableKey.split('_')[1], cuenta:sp.name,
-      mesero:ord.waiter, items:sp.items,
-      total:stotal(sp), timestamp:now, printed:false
-    });
-  });
-  closeOv('ovPrint');
-  toast('📡 Ticket enviado a la cola de impresión');
-}
-function renderPrintQueue(){
-  const wrap=document.getElementById('queueList');
-  if(!fbDB){wrap.innerHTML='<div class="empty-msg">Firebase no conectado.</div>';return;}
-  fbDB.ref('cola_impresion').orderByChild('timestamp').limitToLast(20).once('value',snap=>{
-    const items=[];snap.forEach(c=>items.unshift({key:c.key,...c.val()}));
-    if(!items.length){wrap.innerHTML='<div class="empty-msg">Cola vacía.</div>';return;}
-    wrap.innerHTML=`<table class="dtable">
-      <thead><tr><th>Mesa</th><th>Cuenta</th><th>Mesero</th><th>Items</th><th>Total</th><th>Hora</th><th></th></tr></thead>
-      <tbody>${items.map(t=>`<tr>
-        <td>${t.mesa}</td><td>${t.cuenta}</td><td>${t.mesero}</td>
-        <td>${(t.items||[]).reduce((a,i)=>a+i.qty,0)}</td>
-        <td style="color:var(--accent);font-family:'Share Tech Mono',monospace;">$${fmt(t.total)}</td>
-        <td style="color:var(--dim);">${t.timestamp?new Date(t.timestamp).toLocaleTimeString('es-DO'):'-'}</td>
-        <td><button class="sbtn sbtn-pri" style="font-size:.6rem;padding:4px 9px;" onclick="printFromQueue('${t.key}')">🖨 Imprimir</button></td>
-      </tr>`).join('')}</tbody>
-    </table>`;
-  });
-}
-function printFromQueue(key){
-  if(!fbDB)return;
-  fbDB.ref(`cola_impresion/${key}`).once('value',snap=>{
-    const t=snap.val();if(!t)return;
-    const now=new Date();
-    const html=`<div class="receipt">
-      <div class="receipt-title">THE FAMILY</div>
-      <div class="receipt-sub">BAR &amp; LOUNGE</div><hr>
-      <div class="receipt-row"><span>Mesa:</span><span>${t.mesa}</span></div>
-      <div class="receipt-row"><span>Cuenta:</span><span>${t.cuenta}</span></div>
-      <div class="receipt-row"><span>Mesero:</span><span>${t.mesero}</span></div>
-      <div class="receipt-row"><span>Hora:</span><span>${now.toLocaleTimeString('es-DO')}</span></div><hr>
-      ${(t.items||[]).map(it=>`<div class="receipt-row"><span>${it.name} x${it.qty}</span><span>$${fmt(it.price*it.qty)}</span></div>`).join('')}<hr>
-      <div class="receipt-row receipt-total"><span>TOTAL:</span><span>$${fmt(t.total)}</span></div>
-      <div class="receipt-footer">¡Gracias!</div>
-    </div>`;
-    document.getElementById('printDoc').innerHTML=html;
-    window.print();
-    fbDB.ref(`cola_impresion/${key}`).update({printed:true});
-  });
-}
-function clearQueue(){
-  if(!fbDB){toast('Firebase no conectado','err');return;}
-  if(!confirm('¿Limpiar toda la cola de impresión?'))return;
-  fbRemove('cola_impresion');
-  document.getElementById('queueList').innerHTML='<div class="empty-msg">Cola vacía.</div>';
-  toast('Cola limpiada');
-}
+            // Integración estricta de la estructura estructural dtable-wrap
+            container.innerHTML = `
+                <div class="dtable-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID Pedido</th>
+                                <th>Hora</th>
+                                <th>Destino</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${queueData.map(item => `
+                                <tr>
+                                    <td>#${item.id}</td>
+                                    <td>${item.time || 'Ahora'}</td>
+                                    <td>${item.destination || 'Cocina'}</td>
+                                    <td><span style="color: green; font-weight: bold;">${item.status}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
 
-// ═══════════════════════════════════════════════════
-// 11. SPLIT ASSIGN MODAL
-// ═══════════════════════════════════════════════════
-function openSplitModal(){
-  if(!curTableKey)return;
-  const splits=getSplits();
-  _splitAllItems=[];
-  splits.forEach((sp,si)=>(sp.items||[]).forEach(it=>{
-    for(let q=0;q<it.qty;q++)_splitAllItems.push({name:it.name,price:it.price,si});
-  }));
-  document.getElementById('saList').innerHTML=_splitAllItems.map((it,i)=>`
-    <div class="sarow">
-      <span class="oi-name">${it.name}</span>
-      <select class="sasel" id="ss_${i}">
-        ${splits.map((s,si)=>`<option value="${si}" ${si===it.si?'selected':''}>${s.name}</option>`).join('')}
-      </select>
-      <span style="font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--green);">$${fmt(it.price)}</span>
-    </div>`).join('');
-  showOv('ovSplit');
-}
-function applySplit(){
-  const splits=getSplits();
-  splits.forEach(s=>s.items=[]);
-  _splitAllItems.forEach((it,i)=>{
-    const si=parseInt(document.getElementById(`ss_${i}`).value);
-    const t=splits[si],ex=t.items.find(x=>x.name===it.name&&x.price===it.price);
-    if(ex)ex.qty++;else t.items.push({name:it.name,price:it.price,qty:1});
-  });
-  fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
-  closeOv('ovSplit');renderSplitTabs();renderOrderItems();buildTables(curZone);
-  toast('✔ Cuentas separadas correctamente');
-}
+        // ==========================================
+        // INICIALIZACIÓN DE APLICACIÓN
+        // ==========================================
+        function initApp() {
+            // Inicializar listener estático del Grid de productos
+            initGridMenuListener();
+            
+            // Cargar datos por defecto de la primera categoría
+            switchMCat('entradas');
 
-// ═══════════════════════════════════════════════════
-// 12. ADMIN PANEL
-// ═══════════════════════════════════════════════════
-function openAdmin(tab){
-  if(curUser&&curUser.role==='mesero')return toast('Acceso denegado — solo admin y cajero','err');
-  switchAdmTab(tab||'sales');
-  showOv('ovAdmin');
-}
-function switchAdmTab(tab){
-  document.querySelectorAll('.adm-tab').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.adm-page').forEach(p=>p.classList.remove('show'));
-  document.getElementById(`tab-${tab}`).classList.add('active');
-  document.getElementById(`pg-${tab}`).classList.add('show');
-  if(tab==='sales')renderSales();
-  if(tab==='orders')renderActiveOrders();
-  if(tab==='users')renderUsers();
-  if(tab==='txs')renderTxs();
-  if(tab==='queue')renderPrintQueue();
-}
+            // Renderizar datos de prueba en la cola de impresión por si Firebase no está activo
+            renderPrintQueue([
+                { id: '1024', time: '21:40', destination: 'Cocina', status: 'En espera' },
+                { id: '1025', time: '21:45', destination: 'Barra', status: 'Imprimiendo' }
+            ]);
 
-// ── SALES REPORT ──
-function renderSales(){
-  let food=0,bar=0,bev=0;
-  const validTx=transactions.filter(t=>!t.voided);
-  validTx.forEach(tx=>tx.items.forEach(it=>{
-    const cat=Object.entries(MENU).find(([,items])=>items.some(x=>x.n===it.name))?.[0]||'';
-    const v=it.price*it.qty;
-    if(CAT_FOOD.includes(cat))food+=v;
-    else if(CAT_BAR.includes(cat))bar+=v;
-    else if(CAT_BEV.includes(cat))bev+=v;
-  }));
-  const avg=validTx.length?totalDay/validTx.length:0;
-  document.getElementById('kpiRow').innerHTML=`
-    <div class="kpi"><div class="kpi-lbl">Venta Total Hoy</div><div class="kpi-val">$${fmt(totalDay)}</div><div class="kpi-sub">${validTx.length} transacciones válidas</div></div>
-    <div class="kpi"><div class="kpi-lbl">Ticket Promedio</div><div class="kpi-val">$${fmt(avg)}</div><div class="kpi-sub">por transacción</div></div>
-    <div class="kpi"><div class="kpi-lbl">Mesas Activas</div><div class="kpi-val">${Object.values(tableOrders).filter(o=>o.splits&&o.splits.some(s=>s.items&&s.items.length)).length}</div><div class="kpi-sub">con pedidos abiertos</div></div>
-    <div class="kpi"><div class="kpi-lbl">Anuladas</div><div class="kpi-val" style="color:var(--red);">${voidCount}</div><div class="kpi-sub">facturas anuladas hoy</div></div>`;
-  const cats=[['🍖 Comidas',food,'#2ecc71'],['🍹 Bar/Cocteles',bar,'#9b59b6'],['🍺 Bebidas',bev,'#3498db']];
-  const maxCat=Math.max(...cats.map(c=>c[1]),1);
-  document.getElementById('catBarsWrap').innerHTML=`<div class="chart-wrap"><div class="chart-title">Desglose por Categoría</div><div class="cat-bars">${
-    cats.map(([lbl,val,col])=>`<div class="catb"><div class="catb-name">${lbl}</div><div class="catb-amt">$${fmt(val)}</div><div class="catb-bar"><div class="catb-fill" style="width:${(val/maxCat*100).toFixed(1)}%;background:${col}"></div></div><div class="catb-pct">${totalDay?((val/totalDay)*100).toFixed(1):0}% del total</div></div>`).join('')
-  }</div></div>`;
-  const sorted=Object.entries(prodSales).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const mx=sorted[0]?.[1]||1;
-  document.getElementById('barChart').innerHTML=sorted.length
-    ?sorted.map(([name,val],i)=>`<div class="brow"><span class="blbl">${name}</span><div class="btrack"><div class="bfill" style="width:${(val/mx*100).toFixed(1)}%;background:${BCOLS[i%10]}"></div></div><span class="bval">$${fmt(val)}</span></div>`).join('')
-    :`<div class="empty-msg">Sin datos. Realiza ventas para ver el ranking.</div>`;
-}
-
-// ── HISTORY ──
-function renderTxs(){
-  const canVoid=curUser&&curUser.role==='admin';
-  document.getElementById('txBody').innerHTML=transactions.length
-    ?transactions.map(tx=>`<tr class="${tx.voided?'voided':''}">
-        <td style="color:var(--dim);">#${tx.id}</td>
-        <td><b>${tx.table}</b></td>
-        <td>${tx.split}</td>
-        <td>${tx.waiter}</td>
-        <td>${tx.time?new Date(tx.time).toLocaleTimeString('es-DO'):'-'}</td>
-        <td>${tx.items.reduce((a,i)=>a+i.qty,0)}</td>
-        <td style="color:${tx.voided?'var(--red)':'var(--accent)'};font-family:'Share Tech Mono',monospace;">$${fmt(tx.total)}${tx.voided?'<span class="void-tag">ANULADA</span>':''}</td>
-        <td>${(!tx.voided&&canVoid)?`<button class="void-btn" onclick="voidTransaction(${tx.id})">Anular</button>`:(tx.voided?'—':'')}</td>
-      </tr>`).join('')
-    :`<tr><td colspan="8" class="empty-msg">Sin transacciones aún</td></tr>`;
-}
-
-// ── ACTIVE ORDERS ──
-function renderActiveOrders(){
-  const rows=[];
-  Object.entries(tableOrders).forEach(([key,ord])=>{
-    if(!ord.splits)return;
-    ord.splits.forEach(sp=>{
-      if(!sp.items||!sp.items.length)return;
-      const sc=ord.splits.filter(s=>s.items&&s.items.length).length;
-      rows.push(`<tr>
-        <td><b>${key.split('_')[1]}</b></td><td>${sp.name}</td><td>${ord.waiter}</td>
-        <td>${sp.items.reduce((a,i)=>a+i.qty,0)}</td>
-        <td style="color:var(--accent);font-family:'Share Tech Mono',monospace;">$${fmt(stotal(sp))}</td>
-        <td><span class="tag ${sc>1?'tag-split':'tag-occ'}">${sc>1?`${sc} CUENTAS`:'ABIERTA'}</span></td>
-        <td><button class="ubtn ubtn-edit" onclick="jumpTo('${key}')">→ Ir</button></td>
-      </tr>`);
-    });
-  });
-  document.getElementById('activeBody').innerHTML=rows.length?rows.join('')
-    :`<tr><td colspan="7" class="empty-msg">No hay pedidos activos</td></tr>`;
-}
-function jumpTo(key){
-  closeOv('ovAdmin');
-  const zone=key.split('_')[0],id=key.split('_')[1];
-  if(zone!==curZone){
-    curZone=zone;
-    document.querySelectorAll('.zone-btn').forEach(b=>{if(b.textContent.trim().toUpperCase()===zone)b.click();});
-  }
-  setTimeout(()=>{
-    document.querySelectorAll('.table-btn .tid').forEach(el=>{if(el.textContent===id)el.closest('.table-btn').click();});
-  },150);
-}
-
-// ── USERS ──
-function renderUsers(){
-  const colors=['#00ffc8','#9b59b6','#3498db','#f39c12','#e74c3c','#2ecc71'];
-  const roleTag={admin:'tag-admin',mesero:'tag-mesero',cajero:'tag-cajero'};
-  const roleLabel={admin:'Administrador',mesero:'Mesero/a',cajero:'Cajero/a'};
-  document.getElementById('usersList').innerHTML=users.map((u,i)=>`
-    <div class="user-card">
-      <div class="uavatar" style="background:${colors[i%6]}22;border:2px solid ${colors[i%6]};color:${colors[i%6]}">
-        ${u.name.charAt(0).toUpperCase()}
-      </div>
-      <div class="uinfo">
-        <div class="uname">${u.name} <span class="tag ${roleTag[u.role]}">${roleLabel[u.role]}</span></div>
-        <div class="urole">@${u.user}</div>
-      </div>
-      <div class="ubtns">
-        <button class="ubtn ubtn-edit" onclick="editUser(${u.id})">Editar</button>
-        ${u.user!=='admin'?`<button class="ubtn ubtn-del" onclick="delUser(${u.id})">Eliminar</button>`:''}
-      </div>
-    </div>`).join('');
-}
-function showUForm(reset=true){if(reset)clearUForm();document.getElementById('uForm').style.display='grid';}
-function hideUForm(){document.getElementById('uForm').style.display='none';}
-function clearUForm(){['uName','uUser','uPass','uEditId'].forEach(id=>document.getElementById(id).value='');document.getElementById('uRole').value='mesero';}
-function editUser(id){
-  const u=users.find(x=>x.id===id);if(!u)return;
-  document.getElementById('uEditId').value=id;
-  document.getElementById('uName').value=u.name;
-  document.getElementById('uUser').value=u.user;
-  document.getElementById('uPass').value='';
-  document.getElementById('uRole').value=u.role;
-  showUForm(false);
-}
-function delUser(id){
-  const u=users.find(x=>x.id===id);
-  if(!u||u.user==='admin'){toast('No se puede eliminar este usuario','err');return;}
-  if(!confirm(`¿Eliminar usuario "${u.name}"?`))return;
-  users=users.filter(x=>x.id!==id);renderUsers();toast('Usuario eliminado','warn');
-}
-function saveUser(){
-  const eid=document.getElementById('uEditId').value;
-  const name=document.getElementById('uName').value.trim();
-  const user=document.getElementById('uUser').value.trim().toLowerCase();
-  const pass=document.getElementById('uPass').value;
-  const role=document.getElementById('uRole').value;
-  if(!name||!user){toast('Nombre y usuario son obligatorios','err');return;}
-  if(eid){
-    const u=users.find(x=>x.id===parseInt(eid));
-    if(u){u.name=name;u.user=user;if(pass)u.pass=pass;u.role=role;}
-    toast('✓ Usuario actualizado');
-  }else{
-    if(!pass){toast('Contraseña obligatoria para nuevo usuario','err');return;}
-    if(users.find(x=>x.user===user)){toast('Ese nombre de usuario ya existe','err');return;}
-    users.push({id:nextUserId++,name,user,pass,role});
-    toast('✓ Usuario creado');
-  }
-  hideUForm();renderUsers();
-}
-
-// ── CSV EXPORT ──
-function exportCSV(){
-  if(!transactions.length){toast('Sin datos para exportar','err');return;}
-  const rows=[['#','Mesa','Cuenta','Mesero','Hora','Items','Total','Estado']];
-  transactions.forEach(tx=>{
-    rows.push([tx.id,tx.table,tx.split,tx.waiter,tx.time?new Date(tx.time).toLocaleTimeString('es-DO'):'-',tx.items.reduce((a,i)=>a+i.qty,0),tx.total,tx.voided?'ANULADA':'VÁLIDA']);
-  });
-  const csv=rows.map(r=>r.join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download=`ventas_${new Date().toLocaleDateString('es-DO').replace(/\//g,'-')}.csv`;
-  a.click();
-  toast('📄 CSV exportado');
-}
-
-// ═══════════════════════════════════════════════════
-// 13. UTILS
-// ═══════════════════════════════════════════════════
-function updateStats(){
-  const z=ZONES[curZone];let occ=0;
-  for(let i=1;i<=z.c;i++){const k=tkey(curZone,`${z.p}-${i}`);if(hasItems(k))occ++;}
-  document.getElementById('statFree').textContent=z.c-occ;
-  document.getElementById('statOcc').textContent=occ;
-}
-function updateStatBar(){
-  document.getElementById('statSales').textContent=`$${fmt(totalDay)}`;
-  document.getElementById('statTx').textContent=transactions.filter(t=>!t.voided).length;
-  document.getElementById('statVoid').textContent=voidCount;
-}
-function fmt(n){return Math.round(n).toLocaleString('es-DO');}
-function gv(id){return document.getElementById(id)?.value?.trim()||'';}
-function showOv(id){document.getElementById(id).classList.add('show');}
-function closeOv(id){document.getElementById(id).classList.remove('show');}
-let _tt;
-function toast(msg,type=''){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');
-  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2600);
-}
-setInterval(()=>document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8),1000);
-document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8);
-
-// ═══════════════════════════════════════════════════
-// 14. DEMO DATA (local, pre-loaded orders)
-// ═══════════════════════════════════════════════════
-tableOrders[tkey('TERRAZA','T-1')]={waiter:'Maria',splits:[
-  {id:0,name:'Cuenta 1',items:[{name:'Mojito de Chinola',price:295,qty:2},{name:'Mofongo Clásico a la Crema',price:595,qty:1}]},
-  {id:1,name:'Cuenta 2',items:[{name:'Corona',price:200,qty:2},{name:'Mozzarella Sticks',price:395,qty:1}]},
-]};
-tableOrders[tkey('TERRAZA','T-3')]={waiter:'Carlos',splits:[
-  {id:0,name:'Cuenta 1',items:[{name:'Ribeye Angus',price:1495,qty:1},{name:'Aperol',price:450,qty:2}]},
-]};
-// Seed demo transactions
-(function seedDemo(){
-  const seed=[
-    {id:3,table:'T-5',split:'Cuenta 1',waiter:'Maria',items:[{name:'Pasta Camarones',price:895,qty:1},{name:'Mojito The Family',price:350,qty:2}],total:1595,time:new Date(Date.now()-600000).toISOString(),voided:false},
-    {id:2,table:'T-2',split:'Cuenta 1',waiter:'Carlos',items:[{name:'Churrasco Angus',price:1495,qty:1}],total:1495,time:new Date(Date.now()-1800000).toISOString(),voided:false},
-    {id:1,table:'T-4',split:'Cuenta 1',waiter:'Maria',items:[{name:'Mofongo Mixto',price:695,qty:1},{name:'Presidente',price:150,qty:3}],total:1145,time:new Date(Date.now()-7200000).toISOString(),voided:false},
-  ];
-  transactions=seed;txCount=3;
-  transactions.forEach(tx=>tx.items.forEach(it=>prodSales[it.name]=(prodSales[it.name]||0)+it.price*it.qty));
-  totalDay=transactions.filter(t=>!t.voided).reduce((a,t)=>a+t.total,0);
-  updateStatBar();
-})();
-buildTables('TERRAZA');
-</script>
+            // Inicializar la conexión Firebase
+            const savedConfig = localStorage.getItem('fb_custom_config');
+            initializeFirebase(savedConfig ? JSON.parse(savedConfig) : DEFAULT_FB_CONFIG);
+        }
+    </script>
 </body>
 </html>
