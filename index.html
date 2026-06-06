@@ -386,10 +386,13 @@ header{
   border-radius:6px;background:var(--panel2);
   cursor:pointer;transition:all .13s;
   display:flex;flex-direction:column;gap:2px;
-  min-height:60px;
+  min-height:60px;text-align:left;
+  width:100%;font-family:'Exo 2',sans-serif;
+  -webkit-appearance:none;appearance:none;
+  touch-action:manipulation;
 }
 .mitem:hover,.mitem:focus-visible{border-color:var(--green);background:var(--glow);}
-.mitem:active{transform:scale(.97);}
+.mitem:active{transform:scale(.97);border-color:var(--accent);}
 .mname{font-size:.73rem;font-weight:600;color:var(--text);line-height:1.3;}
 .mprice{font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--green);}
 
@@ -608,27 +611,27 @@ select option{background:var(--panel);}
 <!-- ══ FIREBASE CONFIG MODAL ══ -->
 <div class="ov" id="ovFBConfig">
   <div class="modal">
-    <div class="mh"><span class="mt">🔥 Configurar Firebase</span><button class="xbtn" onclick="closeOv('ovFBConfig')">✕</button></div>
+    <div class="mh"><span class="mt">🔥 Configuración Firebase</span><button class="xbtn" onclick="closeOv('ovFBConfig')">✕</button></div>
     <div class="mb">
-      <div class="fb-info">
-        Para sincronización en tiempo real entre todos los dispositivos, ingresa los datos de tu proyecto de Firebase.<br><br>
-        1. Ve a <code>console.firebase.google.com</code><br>
-        2. Crea un proyecto → Realtime Database<br>
-        3. Copia la configuración de <code>Project Settings → Your apps</code><br>
-        4. Pégala aquí y guarda.
+      <div class="fb-info" style="border-color:rgba(46,204,113,.4);background:rgba(46,204,113,.06);">
+        ✅ <b style="color:var(--green);">Proyecto: thefamilypos</b><br>
+        La configuración de <b>The Family Bar & Lounge</b> ya está integrada.<br>
+        El sistema se conecta automáticamente a Firebase al abrir.<br><br>
+        Solo edita estos campos si cambias de proyecto Firebase.
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
-        <div><label>API Key</label><input type="text" id="fb_apiKey" placeholder="AIzaSy..."></div>
-        <div><label>Auth Domain</label><input type="text" id="fb_authDomain" placeholder="tu-app.firebaseapp.com"></div>
-        <div><label>Database URL</label><input type="text" id="fb_dbURL" placeholder="https://tu-app-rtdb.firebaseio.com"></div>
-        <div><label>Project ID</label><input type="text" id="fb_projectId" placeholder="tu-app"></div>
-        <div><label>Storage Bucket</label><input type="text" id="fb_bucket" placeholder="tu-app.appspot.com"></div>
-        <div><label>Messaging Sender ID</label><input type="text" id="fb_sender" placeholder="123456789"></div>
-        <div style="grid-column:span 2"><label>App ID</label><input type="text" id="fb_appId" placeholder="1:123456:web:abcdef"></div>
+        <div><label>API Key</label><input type="text" id="fb_apiKey"></div>
+        <div><label>Auth Domain</label><input type="text" id="fb_authDomain"></div>
+        <div><label>Database URL</label><input type="text" id="fb_dbURL"></div>
+        <div><label>Project ID</label><input type="text" id="fb_projectId"></div>
+        <div><label>Storage Bucket</label><input type="text" id="fb_bucket"></div>
+        <div><label>Messaging Sender ID</label><input type="text" id="fb_sender"></div>
+        <div style="grid-column:span 2"><label>App ID</label><input type="text" id="fb_appId"></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="sbtn sbtn-pri" onclick="saveFBConfig()">🔥 Conectar a Firebase</button>
-        <button class="sbtn sbtn-sec" onclick="closeOv('ovFBConfig')">Usar modo offline</button>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+        <button class="sbtn sbtn-pri" onclick="saveFBConfig()">💾 Guardar y Reconectar</button>
+        <button class="sbtn sbtn-sec" style="background:rgba(231,76,60,.1);color:var(--red);border:1px solid var(--red);" onclick="resetFBConfig()">↺ Restaurar defaults</button>
+        <button class="sbtn sbtn-sec" onclick="closeOv('ovFBConfig')">Cerrar</button>
       </div>
     </div>
   </div>
@@ -865,14 +868,29 @@ select option{background:var(--panel);}
      JAVASCRIPT
 ══════════════════════════════════════════════════════ -->
 <script>
+'use strict';
 // ═══════════════════════════════════════════════════
-// 1. CONSTANTS
+// 1. FIREBASE CONFIG — hardcoded default
 // ═══════════════════════════════════════════════════
-const ZONES={TERRAZA:{p:'T',c:10},PASILLO:{p:'P',c:6},FRENTE:{p:'F',c:8},VEHICULO:{p:'V',c:4},BANQUITO:{p:'B',c:5},LADO:{p:'L',c:7},ANEXO:{p:'A',c:6}};
+const DEFAULT_FB_CONFIG = {
+  apiKey:            "AIzaSyDTgN-eKBnJ8XmsRW89AJyUCEHUxX0ITxs",
+  authDomain:        "thefamilypos.firebaseapp.com",
+  databaseURL:       "https://thefamilypos-default-rtdb.firebaseio.com",
+  projectId:         "thefamilypos",
+  storageBucket:     "thefamilypos.firebasestorage.app",
+  messagingSenderId: "693492806406",
+  appId:             "1:693492806406:web:1765ac8fd1c19da46c6487",
+  measurementId:     "G-LJWWDS78XK"
+};
+
+// ═══════════════════════════════════════════════════
+// 2. CONSTANTS
+// ═══════════════════════════════════════════════════
+const ZONES={
+  TERRAZA:{p:'T',c:10}, PASILLO:{p:'P',c:6}, FRENTE:{p:'F',c:8},
+  VEHICULO:{p:'V',c:4}, BANQUITO:{p:'B',c:5}, LADO:{p:'L',c:7}, ANEXO:{p:'A',c:6}
+};
 const BCOLS=['#2ecc71','#3498db','#9b59b6','#e67e22','#e74c3c','#00ffc8','#f39c12','#1abc9c','#e91e63','#ff5722'];
-const CAT_FOOD=['Entradas','Mofongos','Plato Fuerte','Pasta','Cortes Angus','Platos Rápidos','Guarniciones'];
-const CAT_BAR=['Cocteles','Tragos y Botellas','Frozen'];
-const CAT_BEV=['Cervezas','Mezcla','Otras Bebidas'];
 const ROLE_COLORS={admin:'#9b59b6',mesero:'#3498db',cajero:'#f39c12'};
 const MENU={
   'Entradas':[{n:'Mozzarella Sticks',p:395},{n:'Palitos de Pescado',p:350},{n:'Canastica de Plátano',p:395},{n:'Nachos Cheese',p:350}],
@@ -891,7 +909,7 @@ const MENU={
 };
 
 // ═══════════════════════════════════════════════════
-// 2. STATE
+// 3. STATE
 // ═══════════════════════════════════════════════════
 let users=[
   {id:1,name:'Admin Family',  user:'admin',pass:'admin777',role:'admin'},
@@ -899,132 +917,138 @@ let users=[
   {id:3,name:'Mesero 1',      user:'m1',   pass:'1234',    role:'mesero'},
   {id:4,name:'Mesero 2',      user:'m2',   pass:'1234',    role:'mesero'},
   {id:5,name:'Mesero 3',      user:'m3',   pass:'1234',    role:'mesero'},
-  {id:6,name:'Mesero 4',      user:'m4',   pass:'1234',    role:'mesero'},
+  {id:6,name:'Joel',          user:'joel', pass:'1234',    role:'mesero'},
 ];
-let nextUserId=7;
-// tableOrders[key] = { waiter, splits:[{id,name,items:[{name,price,qty}]}] }
-let tableOrders={};
-let curZone='TERRAZA', curTableKey=null, curSplitIdx=0, activeCat=Object.keys(MENU)[0];
-let curUser=null;
-let transactions=[]; // {id,table,split,waiter,items,total,time,voided}
+let nextUserId = 7;
+let tableOrders  = {};   // key→{waiter, splits:[{id,name,items:[]}]}
+let curZone      = 'TERRAZA';
+let curTableKey  = null;
+let curSplitIdx  = 0;
+let activeCat    = Object.keys(MENU)[0];
+let curUser      = null;
+let transactions = [];
 let txCount=0, totalDay=0, voidCount=0, prodSales={};
-let comandaCount=9948; // Número base de comanda (como en la foto: 9949 sería la siguiente)
+let comandaCount = 9948;
 let fbDB=null, fbConnected=false;
-let _splitAllItems=[];  // for split assign modal
+let _splitAllItems=[];
+let _comandaSplit=null;
+let _fbFromRemote=false; // flag to avoid echoing Firebase data back
+let _menuGridListenerAttached=false;
 
 // ═══════════════════════════════════════════════════
-// 3. FIREBASE INTEGRATION
+// 4. UTILS
 // ═══════════════════════════════════════════════════
-function saveFBConfig(){
-  const cfg={
-    apiKey:      gv('fb_apiKey'),
-    authDomain:  gv('fb_authDomain'),
-    databaseURL: gv('fb_dbURL'),
-    projectId:   gv('fb_projectId'),
-    storageBucket:gv('fb_bucket'),
-    messagingSenderId:gv('fb_sender'),
-    appId:       gv('fb_appId'),
-  };
-  if(!cfg.apiKey||!cfg.databaseURL){toast('Completa al menos API Key y Database URL','err');return;}
+function fmt(n){return Math.round(n||0).toLocaleString('es-DO');}
+function gv(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function showOv(id){document.getElementById(id).classList.add('show');}
+function closeOv(id){document.getElementById(id).classList.remove('show');}
+let _tt;
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(type?' '+type:'');
+  t.classList.add('show');
+  clearTimeout(_tt);
+  _tt=setTimeout(()=>t.classList.remove('show'),2800);
+}
+function tkey(z,id){return `${z}_${id}`;}
+function stotal(s){return(s.items||[]).reduce((a,i)=>a+(i.price||0)*(i.qty||1),0);}
+function mesaTotal(){return getSplits().reduce((a,s)=>a+stotal(s),0);}
+function getSplits(){return curTableKey&&tableOrders[curTableKey]?tableOrders[curTableKey].splits:[];}
+function getSplit(){return getSplits()[curSplitIdx]||{items:[]};}
+function hasItems(key){const o=tableOrders[key];return o&&o.splits&&o.splits.some(s=>s.items&&s.items.length>0);}
+
+// ═══════════════════════════════════════════════════
+// 5. FIREBASE
+// ═══════════════════════════════════════════════════
+function initFirebase(){
+  let cfg=DEFAULT_FB_CONFIG;
+  try{const s=localStorage.getItem('fbConfig');if(s)cfg={...DEFAULT_FB_CONFIG,...JSON.parse(s)};}catch(e){}
   try{
-    if(firebase.apps.length===0){firebase.initializeApp(cfg);}
-    else{firebase.app().delete().then(()=>{firebase.initializeApp(cfg);initFBListeners();});}
-    initFBListeners();
-    localStorage.setItem('fbConfig',JSON.stringify(cfg));
-    closeOv('ovFBConfig');
-    toast('🔥 Firebase conectado correctamente');
-  }catch(e){
-    toast('Error conectando Firebase: '+e.message,'err');
-  }
+    if(!firebase.apps.length)firebase.initializeApp(cfg);
+    startFBListeners();
+  }catch(e){console.warn('Firebase init failed:',e);}
 }
 
-function initFBListeners(){
+function startFBListeners(){
   try{
     fbDB=firebase.database();
-    // Online/offline indicator
+    // Connection state
     firebase.database().ref('.info/connected').on('value',snap=>{
-      fbConnected=snap.val()===true;
+      fbConnected=!!snap.val();
       document.getElementById('fbDot').className='fbs'+(fbConnected?' ok':'');
       document.getElementById('fbLabel').textContent=fbConnected?'ONLINE':'OFFLINE';
     });
-    // Sync mesas (tables)
+    // Tables sync
     fbDB.ref('mesas').on('value',snap=>{
       const data=snap.val();
-      if(data){
-        // Deep-merge to keep local state if remote arrives
-        tableOrders=JSON.parse(JSON.stringify(data));
-      } else {
-        tableOrders={};
-      }
+      tableOrders=data?JSON.parse(JSON.stringify(data)):{};
       buildTables(curZone);
       if(curTableKey&&tableOrders[curTableKey]){renderSplitTabs();renderOrderItems();}
+      else if(curTableKey&&!tableOrders[curTableKey]){closeOrder();}
     });
-    // Sync transactions
+    // Transactions sync
     fbDB.ref('ventas').orderByChild('id').on('value',snap=>{
       const data=snap.val();
       if(data){
         transactions=Object.values(data).sort((a,b)=>b.id-a.id);
+        txCount=transactions.length;
         totalDay=transactions.filter(t=>!t.voided).reduce((a,t)=>a+t.total,0);
         voidCount=transactions.filter(t=>t.voided).length;
-        txCount=transactions.length;
         prodSales={};
-        transactions.filter(t=>!t.voided).forEach(tx=>tx.items.forEach(it=>prodSales[it.name]=(prodSales[it.name]||0)+it.price*it.qty));
-        updateStatBar();
-      }
+        transactions.filter(t=>!t.voided).forEach(tx=>(tx.items||[]).forEach(it=>{
+          prodSales[it.name]=(prodSales[it.name]||0)+(it.price||0)*(it.qty||1);
+        }));
+      }else{transactions=[];txCount=0;totalDay=0;voidCount=0;prodSales={};}
+      updateStatBar();
     });
-    // Print queue listener (runs on the caja PC)
-    fbDB.ref('cola_impresion').on('child_added',snap=>{
-      const ticket=snap.val();
-      if(ticket&&ticket._key!==snap.key){
-        // New ticket arrived — show in queue tab
-        renderPrintQueue();
-      }
-    });
-  }catch(e){
-    console.warn('Firebase listener error:',e);
-  }
+    // Print queue notifications
+    fbDB.ref('cola_impresion').on('child_added',()=>renderPrintQueue());
+  }catch(e){console.warn('FB listeners error:',e);}
 }
 
-// Try to restore saved config on load
-(function tryRestoreFB(){
-  const saved=localStorage.getItem('fbConfig');
-  if(!saved)return;
-  const cfg=JSON.parse(saved);
+function saveFBConfig(){
+  const cfg={
+    apiKey:           gv('fb_apiKey')           ||DEFAULT_FB_CONFIG.apiKey,
+    authDomain:       gv('fb_authDomain')       ||DEFAULT_FB_CONFIG.authDomain,
+    databaseURL:      gv('fb_dbURL')            ||DEFAULT_FB_CONFIG.databaseURL,
+    projectId:        gv('fb_projectId')        ||DEFAULT_FB_CONFIG.projectId,
+    storageBucket:    gv('fb_bucket')           ||DEFAULT_FB_CONFIG.storageBucket,
+    messagingSenderId:gv('fb_sender')           ||DEFAULT_FB_CONFIG.messagingSenderId,
+    appId:            gv('fb_appId')            ||DEFAULT_FB_CONFIG.appId,
+  };
+  try{
+    if(firebase.apps.length)firebase.app().delete().then(()=>{firebase.initializeApp(cfg);startFBListeners();});
+    else{firebase.initializeApp(cfg);startFBListeners();}
+    localStorage.setItem('fbConfig',JSON.stringify(cfg));
+    closeOv('ovFBConfig');
+    toast('🔥 Firebase reconectado');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
+function resetFBConfig(){
+  localStorage.removeItem('fbConfig');
+  prefillFBForm(DEFAULT_FB_CONFIG);
+  toast('✅ Config restaurada');
+}
+
+function prefillFBForm(cfg){
+  const map={apiKey:'apiKey',authDomain:'authDomain',databaseURL:'dbURL',
+             projectId:'projectId',storageBucket:'bucket',
+             messagingSenderId:'sender',appId:'appId'};
   Object.entries(cfg).forEach(([k,v])=>{
-    const el=document.getElementById('fb_'+({apiKey:'apiKey',authDomain:'authDomain',databaseURL:'dbURL',projectId:'projectId',storageBucket:'bucket',messagingSenderId:'sender',appId:'appId'}[k]||k));
+    const el=document.getElementById('fb_'+(map[k]||k));
     if(el)el.value=v;
   });
-  try{
-    if(firebase.apps.length===0)firebase.initializeApp(cfg);
-    initFBListeners();
-  }catch(e){console.warn('Auto-connect FB failed:',e);}
-})();
+}
 
-// Write to Firebase (with offline fallback)
-function fbSet(path,data){
-  if(fbDB&&fbConnected){
-    fbDB.ref(path).set(data).catch(e=>console.warn('fbSet error',e));
-  }
-}
-function fbUpdate(path,data){
-  if(fbDB&&fbConnected){
-    fbDB.ref(path).update(data).catch(e=>console.warn('fbUpdate error',e));
-  }
-}
-function fbPush(path,data){
-  if(fbDB&&fbConnected){
-    return fbDB.ref(path).push(data);
-  }
-  return null;
-}
-function fbRemove(path){
-  if(fbDB&&fbConnected){
-    fbDB.ref(path).remove().catch(e=>console.warn('fbRemove error',e));
-  }
-}
+function fbSet(path,data){if(fbDB)fbDB.ref(path).set(data).catch(e=>console.warn(e));}
+function fbUpdate(path,data){if(fbDB)fbDB.ref(path).update(data).catch(e=>console.warn(e));}
+function fbPush(path,data){if(fbDB)return fbDB.ref(path).push(data);return null;}
+function fbRemove(path){if(fbDB)fbDB.ref(path).remove().catch(e=>console.warn(e));}
 
 // ═══════════════════════════════════════════════════
-// 4. LOGIN / AUTH
+// 6. LOGIN / AUTH
 // ═══════════════════════════════════════════════════
 function doLogin(){
   const u=gv('lusr'),p=gv('lpass');
@@ -1032,8 +1056,10 @@ function doLogin(){
   if(!found){document.getElementById('lerr').textContent='Usuario o contraseña incorrectos';return;}
   curUser=found;
   document.getElementById('loginScreen').style.display='none';
-  document.getElementById('userBadge').textContent=`${found.name.split(' ')[0].toUpperCase()} [${found.role.toUpperCase()}]`;
+  document.getElementById('userBadge').textContent=
+    `${found.name.split(' ')[0].toUpperCase()} [${found.role.toUpperCase()}]`;
   buildTables(curZone);
+  updateStatBar();
   toast(`✓ Bienvenido, ${found.name.split(' ')[0]}`);
 }
 function logout(){
@@ -1042,15 +1068,16 @@ function logout(){
   document.getElementById('lusr').value='';
   document.getElementById('lpass').value='';
   document.getElementById('lerr').textContent='';
+  document.getElementById('userBadge').textContent='— SIN SESIÓN —';
   document.getElementById('loginScreen').style.display='flex';
 }
 
 // ═══════════════════════════════════════════════════
-// 5. TABLES
+// 7. TABLES
 // ═══════════════════════════════════════════════════
-function tkey(z,id){return `${z}_${id}`;}
 function buildTables(zone){
-  const g=document.getElementById('tablesGrid');g.innerHTML='';
+  const g=document.getElementById('tablesGrid');
+  g.innerHTML='';
   const z=ZONES[zone];
   for(let i=1;i<=z.c;i++){
     const id=`${z.p}-${i}`,key=tkey(zone,id);
@@ -1058,26 +1085,33 @@ function buildTables(zone){
     const occ=ord&&ord.splits&&ord.splits.some(s=>s.items&&s.items.length>0);
     const multi=ord&&ord.splits&&ord.splits.length>1;
     const tot=ord?ord.splits.reduce((a,s)=>a+stotal(s),0):0;
-    const btn=document.createElement('div');
+    const btn=document.createElement('button');
+    btn.type='button';
     btn.className=`table-btn ${occ?(multi?'split':'occupied'):'free'}${curTableKey===key?' selected':''}`;
     btn.innerHTML=`
-      <div class="cdot" style="top:4px;left:4px"></div><div class="cdot" style="top:4px;right:4px"></div>
-      <div class="cdot" style="bottom:4px;left:4px"></div><div class="cdot" style="bottom:4px;right:4px"></div>
+      <div class="cdot" style="top:4px;left:4px"></div>
+      <div class="cdot" style="top:4px;right:4px"></div>
+      <div class="cdot" style="bottom:4px;left:4px"></div>
+      <div class="cdot" style="bottom:4px;right:4px"></div>
       <span class="tid">${id}</span>
-      ${occ?`<span class="tsub">${ord.waiter}</span><span class="tamt">$${fmt(tot)}</span>`:''}
-      ${multi?`<span class="tspbadge">${ord.splits.length} cuentas</span>`:''}`;
-    btn.onclick=()=>selectTable(key,id);
+      ${occ?`<span class="tsub">${ord.waiter||''}</span><span class="tamt">$${fmt(tot)}</span>`:''}
+      ${multi?`<span class="tspbadge">${ord.splits.length} ctas</span>`:''}`;
+    btn.addEventListener('click',()=>selectTable(key,id));
     g.appendChild(btn);
   }
   updateStats();
+  updateStatBar();
 }
+
 function setZone(z,el){
   curZone=z;
   document.querySelectorAll('.zone-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('zoneLabel').textContent=z;
-  closeOrder();buildTables(z);
+  closeOrder();
+  buildTables(z);
 }
+
 function selectTable(key,id){
   if(!curUser)return toast('⚠ Inicia sesión primero','err');
   if(!tableOrders[key]){
@@ -1089,32 +1123,34 @@ function selectTable(key,id){
   document.getElementById('orderPanel').classList.remove('hidden');
   document.getElementById('mainOverlay').classList.add('show');
   buildTables(curZone);
-  renderSplitTabs();renderOrderItems();
+  renderSplitTabs();
+  renderOrderItems();
 }
+
 function closeOrder(){
   document.getElementById('orderPanel').classList.add('hidden');
   document.getElementById('mainOverlay').classList.remove('show');
   curTableKey=null;
   buildTables(curZone);
 }
-function hasItems(key){const o=tableOrders[key];return o&&o.splits&&o.splits.some(s=>s.items&&s.items.length>0);}
 
 // ═══════════════════════════════════════════════════
-// 6. SPLITS
+// 8. SPLITS
 // ═══════════════════════════════════════════════════
-function getSplits(){return curTableKey&&tableOrders[curTableKey]?tableOrders[curTableKey].splits:[];}
-function getSplit(){return getSplits()[curSplitIdx]||{items:[]};}
-function stotal(s){return(s.items||[]).reduce((a,i)=>a+i.price*i.qty,0);}
-function mesaTotal(){return getSplits().reduce((a,s)=>a+stotal(s),0);}
-
 function renderSplitTabs(){
   const splits=getSplits();
   document.getElementById('splitTabs').innerHTML=
-    splits.map((s,i)=>`<button class="stab${i===curSplitIdx?' active':''}" onclick="switchSplit(${i})">${s.name} · $${fmt(stotal(s))}</button>`).join('')+
+    splits.map((s,i)=>
+      `<button class="stab${i===curSplitIdx?' active':''}" onclick="switchSplit(${i})">
+        ${s.name} · $${fmt(stotal(s))}
+      </button>`
+    ).join('')+
     `<button class="stab add" onclick="addSplit()">+ Cuenta</button>`;
   document.getElementById('totAmt').textContent=`$${fmt(mesaTotal())}`;
 }
+
 function switchSplit(i){curSplitIdx=i;renderSplitTabs();renderOrderItems();}
+
 function addSplit(){
   const sp=getSplits();
   sp.push({id:sp.length,name:`Cuenta ${sp.length+1}`,items:[]});
@@ -1125,10 +1161,11 @@ function addSplit(){
 }
 
 // ═══════════════════════════════════════════════════
-// 7. ORDER ITEMS
+// 9. ORDER ITEMS
 // ═══════════════════════════════════════════════════
 function renderOrderItems(){
-  const sp=getSplit(),cont=document.getElementById('orderItems');
+  const sp=getSplit();
+  const cont=document.getElementById('orderItems');
   if(!sp.items||!sp.items.length){
     cont.innerHTML=`<div class="empty-msg">Sin items en ${sp.name||'esta cuenta'}</div>`;
     renderSplitTabs();return;
@@ -1141,64 +1178,149 @@ function renderOrderItems(){
         <span class="iqty">${it.qty}</span>
         <button class="qbtn" onclick="chgQty(${i},1)">+</button>
       </div>
-      <span class="iprice">$${fmt(it.price*it.qty)}</span>
-      <button class="idel" onclick="rmItem(${i})">✕</button>
+      <span class="iprice">$${fmt((it.price||0)*(it.qty||1))}</span>
+      <button class="idel" onclick="rmItem(${i})" title="Eliminar">✕</button>
     </div>`).join('');
   renderSplitTabs();
 }
+
 function chgQty(i,d){
   if(!curTableKey)return;
   const sp=getSplit();
-  sp.items[i].qty+=d;
-  if(sp.items[i].qty<=0){
-    if(!confirm('¿Eliminar este producto del pedido?')){sp.items[i].qty=1;}
-    else{sp.items.splice(i,1);}
-  }
+  if(!sp.items[i])return;
+  sp.items[i].qty=(sp.items[i].qty||1)+d;
+  if(sp.items[i].qty<=0)sp.items.splice(i,1);
   fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
   renderOrderItems();buildTables(curZone);
 }
+
 function rmItem(i){
+  if(!curTableKey)return;
   getSplit().items.splice(i,1);
   fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
   renderOrderItems();buildTables(curZone);
 }
+
 function addItemToOrder(name,price){
-  if(!curTableKey)return;
-  const sp=getSplit(),ex=sp.items.find(x=>x.name===name);
-  if(ex)ex.qty++;else sp.items.push({name,price,qty:1});
+  if(!curTableKey){toast('⚠ Selecciona una mesa primero','err');return;}
+  const sp=getSplit();
+  const ex=sp.items.find(x=>x.name===name);
+  if(ex){ex.qty++;}else{sp.items.push({name,price,qty:1});}
   fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
   renderOrderItems();buildTables(curZone);
+  // Flash feedback on the item button
+  document.querySelectorAll('#mGrid .mitem').forEach(b=>{
+    if(decodeURIComponent(b.dataset.name||'')===name){
+      b.style.borderColor='var(--accent)';
+      b.style.background='rgba(0,255,200,.2)';
+      setTimeout(()=>{b.style.borderColor='';b.style.background='';},350);
+    }
+  });
   toast(`✓ ${name}`);
 }
 
 // ═══════════════════════════════════════════════════
-// 8. PAY / CANCEL
+// 10. MENU MODAL
+// ═══════════════════════════════════════════════════
+function openMenu(){
+  if(!curTableKey)return;
+  document.getElementById('menuModalTitle').textContent=`Agregar → ${getSplit().name}`;
+  document.getElementById('msearch').value='';
+  renderMCats();renderMItems(activeCat);
+  showOv('ovMenu');
+  // Attach event delegation ONCE
+  if(!_menuGridListenerAttached){
+    _menuGridListenerAttached=true;
+    const grid=document.getElementById('mGrid');
+    grid.addEventListener('click',e=>{
+      const btn=e.target.closest('.mitem');
+      if(!btn)return;
+      addItemToOrder(decodeURIComponent(btn.dataset.name||''),parseFloat(btn.dataset.price||0));
+    });
+    // iOS touchend for instant response
+    grid.addEventListener('touchend',e=>{
+      const btn=e.target.closest('.mitem');
+      if(!btn)return;
+      e.preventDefault();
+      addItemToOrder(decodeURIComponent(btn.dataset.name||''),parseFloat(btn.dataset.price||0));
+    },{passive:false});
+  }
+}
+
+function renderMCats(){
+  document.getElementById('mCats').innerHTML=
+    Object.keys(MENU).map(c=>
+      `<button class="mcat${c===activeCat?' active':''}" onclick="switchMCat('${c}')">${c}</button>`
+    ).join('');
+}
+
+function switchMCat(c){
+  activeCat=c;
+  document.getElementById('msearch').value='';
+  renderMCats();renderMItems(c);
+}
+
+function renderMItems(c){
+  document.getElementById('mCats').style.display='';
+  document.getElementById('mGrid').innerHTML=(MENU[c]||[]).map(it=>
+    `<button class="mitem" type="button"
+       data-name="${encodeURIComponent(it.n)}"
+       data-price="${it.p}">
+      <span class="mname">${it.n}</span>
+      <span class="mprice">$${it.p.toLocaleString('es-DO')}</span>
+    </button>`
+  ).join('');
+}
+
+function filterMenu(q){
+  const grid=document.getElementById('mGrid');
+  const cats=document.getElementById('mCats');
+  if(!q.trim()){cats.style.display='';renderMItems(activeCat);return;}
+  cats.style.display='none';
+  const res=[];
+  Object.values(MENU).forEach(arr=>arr.forEach(it=>{
+    if(it.n.toLowerCase().includes(q.toLowerCase()))res.push(it);
+  }));
+  grid.innerHTML=res.length
+    ?res.map(it=>
+        `<button class="mitem" type="button"
+           data-name="${encodeURIComponent(it.n)}"
+           data-price="${it.p}">
+          <span class="mname">${it.n}</span>
+          <span class="mprice">$${it.p.toLocaleString('es-DO')}</span>
+        </button>`).join('')
+    :`<div class="empty-msg" style="grid-column:1/-1">Sin resultados para "${q}"</div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// 11. PAY / CANCEL
 // ═══════════════════════════════════════════════════
 function payOrder(){
   if(!curTableKey)return;
-  const sp=getSplit(),amt=stotal(sp);
+  const sp=getSplit();
+  const amt=stotal(sp);
   if(!amt)return toast('⚠ Sin items para cobrar','err');
-
   txCount++;
   const tx={
-    id:txCount, table:curTableKey.split('_')[1], split:sp.name,
-    waiter:tableOrders[curTableKey].waiter,
+    id:txCount,
+    table:curTableKey.split('_')[1],
+    split:sp.name,
+    waiter:tableOrders[curTableKey].waiter||'—',
     items:JSON.parse(JSON.stringify(sp.items)),
-    total:amt, time:new Date().toISOString(), voided:false
+    total:amt,
+    time:new Date().toISOString(),
+    voided:false
   };
   transactions.unshift(tx);
   totalDay+=amt;
-  sp.items.forEach(it=>prodSales[it.name]=(prodSales[it.name]||0)+it.price*it.qty);
-
-  // Firebase sync
+  (tx.items||[]).forEach(it=>prodSales[it.name]=(prodSales[it.name]||0)+(it.price||0)*(it.qty||1));
   fbPush('ventas',tx);
-
   const splits=getSplits();
   if(splits.length===1){
     delete tableOrders[curTableKey];
     fbRemove(`mesas/${curTableKey}`);
     closeOrder();
-  } else {
+  }else{
     splits.splice(curSplitIdx,1);
     splits.forEach((s,i)=>{s.id=i;s.name=`Cuenta ${i+1}`;});
     curSplitIdx=0;
@@ -1213,331 +1335,235 @@ function cancelOrder(){
   if(!curTableKey||!confirm('¿Cancelar toda la orden de esta mesa?'))return;
   delete tableOrders[curTableKey];
   fbRemove(`mesas/${curTableKey}`);
-  closeOrder();buildTables(curZone);toast('🗑 Orden cancelada');
+  closeOrder();buildTables(curZone);
+  toast('🗑 Orden cancelada');
 }
 
-// ── VOID TRANSACTION (Admin only) ──
 function voidTransaction(txId){
   if(!curUser||curUser.role!=='admin'){toast('Solo administradores pueden anular ventas','err');return;}
-  if(!confirm(`¿ANULAR FACTURA #${txId}? Esta acción restará el importe del total del día.`))return;
+  if(!confirm(`¿ANULAR FACTURA #${txId}?`))return;
   const tx=transactions.find(t=>t.id===txId);
   if(!tx||tx.voided)return;
-  tx.voided=true;
-  totalDay-=tx.total;
-  voidCount++;
-  tx.items.forEach(it=>{
-    if(prodSales[it.name])prodSales[it.name]=Math.max(0,prodSales[it.name]-it.price*it.qty);
-  });
-  // Firebase: mark as voided
-  if(fbDB&&fbConnected){
-    fbDB.ref('ventas').orderByChild('id').equalTo(txId).once('value',snap=>{
-      snap.forEach(c=>fbDB.ref(`ventas/${c.key}`).update({voided:true}));
-    });
-  }
+  tx.voided=true;totalDay-=tx.total;voidCount++;
+  (tx.items||[]).forEach(it=>{if(prodSales[it.name])prodSales[it.name]=Math.max(0,prodSales[it.name]-(it.price||0)*(it.qty||1));});
+  if(fbDB){fbDB.ref('ventas').orderByChild('id').equalTo(txId).once('value',snap=>{snap.forEach(c=>fbDB.ref(`ventas/${c.key}`).update({voided:true}));});}
   updateStatBar();renderTxs();renderSales();
   toast(`⚠ Factura #${txId} anulada`,'warn');
 }
 
 // ═══════════════════════════════════════════════════
-// 9. MENU
+// 12. PRINT — FACTURA
 // ═══════════════════════════════════════════════════
-function openMenu(){
-  if(!curTableKey)return;
-  document.getElementById('menuModalTitle').textContent=`Agregar → ${getSplit().name}`;
-  document.getElementById('msearch').value='';
-  renderMCats();renderMItems(activeCat);showOv('ovMenu');
-}
-function renderMCats(){
-  document.getElementById('mCats').innerHTML=Object.keys(MENU).map(c=>`<button class="mcat${c===activeCat?' active':''}" onclick="switchMCat('${c}')">${c}</button>`).join('');
-}
-function switchMCat(c){activeCat=c;document.getElementById('msearch').value='';renderMCats();renderMItems(c);}
-function renderMItems(c){
-  document.getElementById('mCats').style.display='';
-  document.getElementById('mGrid').innerHTML=MENU[c].map(it=>`
-    <div class="mitem" onclick="addItemToOrder(${JSON.stringify(it.n)},${it.p})">
-      <span class="mname">${it.n}</span><span class="mprice">$${it.p.toLocaleString('es-DO')}</span>
-    </div>`).join('');
-}
-function filterMenu(q){
-  const grid=document.getElementById('mGrid'),cats=document.getElementById('mCats');
-  if(!q.trim()){cats.style.display='';renderMItems(activeCat);return;}
-  cats.style.display='none';
-  const res=[];
-  Object.values(MENU).forEach(items=>items.forEach(it=>{if(it.n.toLowerCase().includes(q.toLowerCase()))res.push(it);}));
-  grid.innerHTML=res.length
-    ?res.map(it=>`<div class="mitem" onclick="addItemToOrder(${JSON.stringify(it.n)},${it.p})"><span class="mname">${it.n}</span><span class="mprice">$${it.p.toLocaleString('es-DO')}</span></div>`).join('')
-    :`<div class="empty-msg" style="grid-column:1/-1">Sin resultados para "${q}"</div>`;
-}
-
-// ═══════════════════════════════════════════════════
-// 10. PRINT & SEND TO CAJA
-// ═══════════════════════════════════════════════════
-function buildReceiptHTML(forPrint=false){
+function buildReceiptHTML(){
   if(!curTableKey)return'';
   const ord=tableOrders[curTableKey],splits=getSplits(),now=new Date();
-  let html='';
-  splits.forEach((sp,i)=>{
-    if(!sp.items||!sp.items.length)return;
+  return splits.filter(sp=>sp.items&&sp.items.length).map((sp,i)=>{
     const sub=stotal(sp),tax=Math.round(sub*0.18);
-    html+=`<div class="receipt"${i>0?' style="margin-top:16px;border-top:2px dashed #ccc;padding-top:14px;"':''}>
+    return `<div class="receipt"${i>0?' style="margin-top:16px;border-top:2px dashed #ccc;padding-top:14px;"':''}>
       <div class="receipt-title">THE FAMILY</div>
       <div class="receipt-sub">BAR &amp; LOUNGE<br>Tel: 829-914-0282 | @thefamilyfoodtruck</div>
       <hr>
       <div class="receipt-row"><span>Mesa:</span><span>${curTableKey.split('_')[1]}</span></div>
       <div class="receipt-row"><span>Cuenta:</span><span>${sp.name}</span></div>
-      <div class="receipt-row"><span>Mesero:</span><span>${ord.waiter}</span></div>
+      <div class="receipt-row"><span>Mesero:</span><span>${ord.waiter||'—'}</span></div>
       <div class="receipt-row"><span>Fecha:</span><span>${now.toLocaleDateString('es-DO')}</span></div>
-      <div class="receipt-row"><span>Hora:</span><span>${now.toLocaleTimeString('es-DO')}</span></div>
+      <div class="receipt-row"><span>Hora:</span><span>${now.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})}</span></div>
       <hr>
-      ${sp.items.map(it=>`<div class="receipt-row"><span>${it.name} x${it.qty}</span><span>$${fmt(it.price*it.qty)}</span></div>`).join('')}
+      ${sp.items.map(it=>`<div class="receipt-row"><span>${it.name} ×${it.qty}</span><span>$${fmt((it.price||0)*(it.qty||1))}</span></div>`).join('')}
       <hr>
       <div class="receipt-row"><span>Subtotal:</span><span>$${fmt(sub)}</span></div>
       <div class="receipt-row"><span>ITBIS 18%:</span><span>$${fmt(tax)}</span></div>
       <div class="receipt-row receipt-total"><span>TOTAL:</span><span>$${fmt(sub+tax)}</span></div>
       <div class="receipt-footer">¡Gracias por su visita! Vuelva pronto 🎉</div>
     </div>`;
-  });
-  return html;
+  }).join('');
 }
-
-function openPrint(){
-  if(!curTableKey)return;
-  document.getElementById('receiptPreview').innerHTML=buildReceiptHTML();
-  showOv('ovPrint');
-}
-function doPrint(){
-  const html=buildReceiptHTML(true);
-  document.getElementById('printDoc').innerHTML=html;
-  window.print();
-}
-// Send ticket to Firebase print queue (caja PC listens)
+function openPrint(){if(!curTableKey)return;document.getElementById('receiptPreview').innerHTML=buildReceiptHTML();showOv('ovPrint');}
+function doPrint(){document.getElementById('printDoc').innerHTML=buildReceiptHTML();window.print();}
 function sendToCaja(){
-  if(!fbDB||!fbConnected){toast('Firebase no conectado. Configura Firebase primero.','err');return;}
+  if(!fbDB)return toast('Firebase no conectado','err');
   const ord=tableOrders[curTableKey],splits=getSplits(),now=new Date().toISOString();
-  splits.forEach(sp=>{
-    if(!sp.items||!sp.items.length)return;
-    fbPush('cola_impresion',{
-      mesa:curTableKey.split('_')[1], cuenta:sp.name,
-      mesero:ord.waiter, items:sp.items,
-      total:stotal(sp), timestamp:now, printed:false
-    });
+  splits.filter(sp=>sp.items&&sp.items.length).forEach(sp=>{
+    fbPush('cola_impresion',{mesa:curTableKey.split('_')[1],cuenta:sp.name,mesero:ord.waiter||'—',items:sp.items,total:stotal(sp),timestamp:now,printed:false});
   });
-  closeOv('ovPrint');
-  toast('📡 Ticket enviado a la cola de impresión');
+  closeOv('ovPrint');toast('📡 Ticket enviado a caja');
 }
 
 // ═══════════════════════════════════════════════════
-// 10b. COMANDA / KITCHEN TICKET
+// 13. COMANDA / KITCHEN TICKET
 // ═══════════════════════════════════════════════════
-function buildComandaHTML(sp, splitIdx){
-  if(!curTableKey||!sp||!sp.items||!sp.items.length)return'';
-  const ord=tableOrders[curTableKey];
+function _comandaHTML(sp,numC,ord){
   const now=new Date();
   const mesa=curTableKey.split('_')[1];
-  const area=curZone;
-  const numComanda=comandaCount+1; // will be incremented on print
-  // Format date: D/M/YYYY
   const fecha=`${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
-  // Format time: H:MM a.m./p.m.
   let h=now.getHours(),m=now.getMinutes(),ap=h>=12?'p.m.':'a.m.';
   h=h%12||12;
   const hora=`${h}:${String(m).padStart(2,'0')} ${ap}`;
-  // Line separator (58 chars wide typical receipt)
-  const sep='- - - - - - - - - - - - - - - - - - - - - - - -';
-  const items=(sp.items||[]).map(it=>`  ${String(it.qty).padStart(2,' ')}  ${it.name.toUpperCase()}`).join('\n');
-  return `<div style="font-family:'Courier New',Courier,monospace;font-size:.85rem;color:#111;background:#fff;padding:22px 18px;line-height:1.9;white-space:pre-wrap;">
-<b style="display:block;text-align:center;font-size:1.05rem;letter-spacing:.5px;">  COMANDA / ORDEN SERVICIO</b>
-<span style="display:block;text-align:left;font-size:.85rem;">  ${fecha}               ${hora}</span>
+  const sep='- '.repeat(24);
+  const items=(sp.items||[]).map(it=>`  ${String(it.qty).padStart(2,' ')}  ${(it.name||'').toUpperCase()}`).join('\n');
+  return `<div style="font-family:'Courier New',Courier,monospace;font-size:14px;color:#000;background:#fff;padding:22px 18px;line-height:1.9;white-space:pre-wrap;max-width:300px;margin:0 auto;">
+<b style="display:block;text-align:center;font-size:15px;margin-bottom:2px;">COMANDA / ORDEN SERVICIO</b>
+<span style="display:block;">  ${fecha}          ${hora}</span>
 <span style="display:block;color:#555;">${sep}</span>
 <span style="display:block;"><b>  MESA</b>     ${mesa}</span>
 <span style="display:block;"><b>  MESERO</b>   ${(ord.waiter||'').toUpperCase()}</span>
-<span style="display:block;"><b>  AREA</b>     ${area}</span>
+<span style="display:block;"><b>  AREA</b>     ${curZone}</span>
 <span style="display:block;"><b>  CLIENTE</b>  ${sp.name}</span>
-<span style="display:block;"><b>  FACTURA</b>  ${numComanda}</span>
+<span style="display:block;"><b>  FACTURA</b>  ${numC}</span>
 <span style="display:block;color:#555;">${sep}</span>
 ${items}
 <span style="display:block;color:#555;">${sep}</span>
-<b style="display:block;text-align:center;letter-spacing:2px;">*** FIN COMANDA **</b>
+<b style="display:block;text-align:center;letter-spacing:2px;margin-top:4px;">*** FIN COMANDA **</b>
 </div>`;
 }
-
-let _comandaSplit=null; // which split we're printing comanda for
 
 function openComanda(){
   if(!curTableKey)return;
   const sp=getSplit();
   if(!sp.items||!sp.items.length)return toast('⚠ Sin productos en esta cuenta','err');
-  _comandaSplit=sp;
-  document.getElementById('comandaPreview').innerHTML=buildComandaHTML(sp, curSplitIdx);
+  _comandaSplit={...sp,items:JSON.parse(JSON.stringify(sp.items))};
+  const ord=tableOrders[curTableKey];
+  document.getElementById('comandaPreview').innerHTML=_comandaHTML(_comandaSplit,comandaCount+1,ord);
   showOv('ovComanda');
 }
 
 function printComanda(){
   if(!_comandaSplit)return;
   comandaCount++;
-  const sp=_comandaSplit;
-  const ord=tableOrders[curTableKey];
-  const now=new Date();
-  const mesa=curTableKey.split('_')[1];
-  const area=curZone;
-  const fecha=`${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
-  let h=now.getHours(),m=now.getMinutes(),ap=h>=12?'p.m.':'a.m.';h=h%12||12;
-  const hora=`${h}:${String(m).padStart(2,'0')} ${ap}`;
-  const sep='- - - - - - - - - - - - - - - - - - - - - - - -';
-  const items=(sp.items||[]).map(it=>`  ${String(it.qty).padStart(2,' ')}  ${it.name.toUpperCase()}`).join('\n');
-  const html=`<div style="font-family:'Courier New',Courier,monospace;font-size:14px;color:#000;background:#fff;padding:22px 18px;line-height:2;white-space:pre-wrap;max-width:280px;margin:0 auto;">
-<b style="display:block;text-align:center;font-size:15px;">  COMANDA / ORDEN SERVICIO</b>
-  ${fecha}               ${hora}
-${sep}
-  MESA     ${mesa}
-  MESERO   ${(ord.waiter||'').toUpperCase()}
-  AREA     ${area}
-  CLIENTE  ${sp.name}
-  FACTURA  ${comandaCount}
-${sep}
-${items}
-${sep}
-<b style="display:block;text-align:center;letter-spacing:2px;">*** FIN COMANDA **</b>
-</div>`;
+  const ord=tableOrders[curTableKey]||{waiter:'—'};
+  const html=_comandaHTML(_comandaSplit,comandaCount,ord);
   document.getElementById('printDoc').innerHTML=html;
   window.print();
+  // Push to Firebase kitchen queue
+  fbPush('cola_cocina',{
+    mesa:curTableKey.split('_')[1], cuenta:_comandaSplit.name,
+    mesero:ord.waiter||'—', area:curZone,
+    items:_comandaSplit.items, numComanda:comandaCount,
+    timestamp:new Date().toISOString(), impresa:false
+  });
   closeOv('ovComanda');
   toast(`🧾 Comanda #${comandaCount} impresa`);
-  // Also push to Firebase kitchen queue if connected
-  if(fbDB&&fbConnected){
-    fbPush('cola_cocina',{
-      mesa, cuenta:sp.name, mesero:ord.waiter, area,
-      items:sp.items, numComanda:comandaCount,
-      timestamp:now.toISOString(), impresa:false
-    });
-  }
 }
 
 function sendComandaToKitchen(){
-  if(!fbDB||!fbConnected){toast('Firebase no conectado','err');return;}
+  if(!fbDB)return toast('Firebase no conectado','err');
   if(!_comandaSplit)return;
   comandaCount++;
-  const sp=_comandaSplit;
-  const ord=tableOrders[curTableKey];
+  const ord=tableOrders[curTableKey]||{waiter:'—'};
   fbPush('cola_cocina',{
-    mesa:curTableKey.split('_')[1], cuenta:sp.name,
-    mesero:ord.waiter, area:curZone, items:sp.items,
-    numComanda:comandaCount, timestamp:new Date().toISOString(), impresa:false
+    mesa:curTableKey.split('_')[1], cuenta:_comandaSplit.name,
+    mesero:ord.waiter||'—', area:curZone,
+    items:_comandaSplit.items, numComanda:comandaCount,
+    timestamp:new Date().toISOString(), impresa:false
   });
   closeOv('ovComanda');
   toast(`📡 Comanda #${comandaCount} enviada a cocina`);
 }
+
+// ═══════════════════════════════════════════════════
+// 14. PRINT QUEUE
+// ═══════════════════════════════════════════════════
 function renderPrintQueue(){
   const wrap=document.getElementById('queueList');
   if(!fbDB){wrap.innerHTML='<div class="empty-msg">Firebase no conectado.</div>';return;}
-  fbDB.ref('cola_impresion').orderByChild('timestamp').limitToLast(20).once('value',snap=>{
+  fbDB.ref('cola_impresion').orderByChild('timestamp').limitToLast(25).once('value',snap=>{
     const items=[];snap.forEach(c=>items.unshift({key:c.key,...c.val()}));
     if(!items.length){wrap.innerHTML='<div class="empty-msg">Cola vacía.</div>';return;}
-    wrap.innerHTML=`<table class="dtable">
+    wrap.innerHTML=`<div class="dtable-wrap"><table class="dtable">
       <thead><tr><th>Mesa</th><th>Cuenta</th><th>Mesero</th><th>Items</th><th>Total</th><th>Hora</th><th></th></tr></thead>
       <tbody>${items.map(t=>`<tr>
-        <td>${t.mesa}</td><td>${t.cuenta}</td><td>${t.mesero}</td>
-        <td>${(t.items||[]).reduce((a,i)=>a+i.qty,0)}</td>
+        <td><b>${t.mesa}</b></td><td>${t.cuenta}</td><td>${t.mesero}</td>
+        <td>${(t.items||[]).reduce((a,i)=>a+(i.qty||1),0)}</td>
         <td style="color:var(--accent);font-family:'Share Tech Mono',monospace;">$${fmt(t.total)}</td>
-        <td style="color:var(--dim);">${t.timestamp?new Date(t.timestamp).toLocaleTimeString('es-DO'):'-'}</td>
-        <td><button class="sbtn sbtn-pri" style="font-size:.6rem;padding:4px 9px;" onclick="printFromQueue('${t.key}')">🖨 Imprimir</button></td>
-      </tr>`).join('')}</tbody>
-    </table>`;
+        <td style="color:var(--dim);white-space:nowrap;">${t.timestamp?new Date(t.timestamp).toLocaleTimeString('es-DO'):'-'}</td>
+        <td><button class="sbtn sbtn-pri" style="font-size:.6rem;padding:5px 10px;" onclick="printFromQueue('${t.key}')">🖨 Imprimir</button></td>
+      </tr>`).join('')}</tbody></table></div>`;
   });
 }
+
 function printFromQueue(key){
   if(!fbDB)return;
   fbDB.ref(`cola_impresion/${key}`).once('value',snap=>{
     const t=snap.val();if(!t)return;
-    const now=new Date();
+    const sub=t.total||0, tax=Math.round(sub*0.18);
     const html=`<div class="receipt">
       <div class="receipt-title">THE FAMILY</div>
       <div class="receipt-sub">BAR &amp; LOUNGE</div><hr>
       <div class="receipt-row"><span>Mesa:</span><span>${t.mesa}</span></div>
       <div class="receipt-row"><span>Cuenta:</span><span>${t.cuenta}</span></div>
-      <div class="receipt-row"><span>Mesero:</span><span>${t.mesero}</span></div>
-      <div class="receipt-row"><span>Hora:</span><span>${now.toLocaleTimeString('es-DO')}</span></div><hr>
-      ${(t.items||[]).map(it=>`<div class="receipt-row"><span>${it.name} x${it.qty}</span><span>$${fmt(it.price*it.qty)}</span></div>`).join('')}<hr>
-      <div class="receipt-row receipt-total"><span>TOTAL:</span><span>$${fmt(t.total)}</span></div>
-      <div class="receipt-footer">¡Gracias!</div>
-    </div>`;
+      <div class="receipt-row"><span>Mesero:</span><span>${t.mesero}</span></div><hr>
+      ${(t.items||[]).map(it=>`<div class="receipt-row"><span>${it.name} ×${it.qty}</span><span>$${fmt((it.price||0)*(it.qty||1))}</span></div>`).join('')}<hr>
+      <div class="receipt-row"><span>Subtotal:</span><span>$${fmt(sub)}</span></div>
+      <div class="receipt-row"><span>ITBIS 18%:</span><span>$${fmt(tax)}</span></div>
+      <div class="receipt-row receipt-total"><span>TOTAL:</span><span>$${fmt(sub+tax)}</span></div>
+      <div class="receipt-footer">¡Gracias!</div></div>`;
     document.getElementById('printDoc').innerHTML=html;
     window.print();
     fbDB.ref(`cola_impresion/${key}`).update({printed:true});
   });
 }
+
 function clearQueue(){
-  if(!fbDB){toast('Firebase no conectado','err');return;}
+  if(!fbDB)return toast('Firebase no conectado','err');
   if(!confirm('¿Limpiar toda la cola de impresión?'))return;
   fbRemove('cola_impresion');
   document.getElementById('queueList').innerHTML='<div class="empty-msg">Cola vacía.</div>';
   toast('Cola limpiada');
 }
 
-// ── KITCHEN / COCINA QUEUE ──
+// ═══════════════════════════════════════════════════
+// 15. KITCHEN / COCINA QUEUE
+// ═══════════════════════════════════════════════════
 function renderCocinaQueue(){
   const wrap=document.getElementById('cocinaList');
   if(!fbDB){wrap.innerHTML='<div class="empty-msg">Firebase no conectado.</div>';return;}
-  fbDB.ref('cola_cocina').orderByChild('timestamp').limitToLast(30).once('value',snap=>{
+  fbDB.ref('cola_cocina').orderByChild('timestamp').limitToLast(40).once('value',snap=>{
     const items=[];snap.forEach(c=>items.unshift({key:c.key,...c.val()}));
     if(!items.length){wrap.innerHTML='<div class="empty-msg">Sin comandas pendientes.</div>';return;}
     wrap.innerHTML=`<div class="dtable-wrap"><table class="dtable">
       <thead><tr><th>#</th><th>Mesa</th><th>Area</th><th>Mesero</th><th>Cuenta</th><th>Items</th><th>Hora</th><th>Estado</th><th></th></tr></thead>
-      <tbody>${items.map(t=>`<tr style="${t.impresa?'opacity:.45':''}">
-        <td style="font-family:'Share Tech Mono',monospace;color:var(--accent);">${t.numComanda||'-'}</td>
-        <td><b>${t.mesa}</b></td>
-        <td>${t.area||'-'}</td>
-        <td>${t.mesero||'-'}</td>
-        <td>${t.cuenta||'-'}</td>
-        <td>${(t.items||[]).map(i=>`${i.qty}× ${i.name}`).join(', ')}</td>
+      <tbody>${items.map(t=>`<tr style="${t.impresa?'opacity:.4':''}">
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--accent);">${t.numComanda||'—'}</td>
+        <td><b>${t.mesa}</b></td><td>${t.area||'—'}</td><td>${t.mesero||'—'}</td>
+        <td>${t.cuenta||'—'}</td>
+        <td style="font-size:.65rem;">${(t.items||[]).map(i=>`${i.qty}× ${i.name}`).join('<br>')}</td>
         <td style="color:var(--dim);white-space:nowrap;">${t.timestamp?new Date(t.timestamp).toLocaleTimeString('es-DO'):'-'}</td>
         <td><span class="tag ${t.impresa?'tag-occ':'tag-split'}">${t.impresa?'LISTA':'PENDIENTE'}</span></td>
-        <td style="display:flex;gap:4px;">
-          <button class="sbtn sbtn-pri" style="font-size:.6rem;padding:4px 9px;" onclick="printCocinaItem('${t.key}')">🖨</button>
-          ${!t.impresa?`<button class="sbtn sbtn-sec" style="font-size:.6rem;padding:4px 9px;" onclick="markCocinaReady('${t.key}')">✔ Lista</button>`:''}
+        <td style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="sbtn sbtn-pri" style="font-size:.6rem;padding:5px 9px;" onclick="printCocinaItem('${t.key}')">🖨</button>
+          ${!t.impresa?`<button class="sbtn sbtn-sec" style="font-size:.6rem;padding:5px 9px;" onclick="markCocinaReady('${t.key}')">✔</button>`:''}
         </td>
-      </tr>`).join('')}</tbody>
-    </table></div>`;
+      </tr>`).join('')}</tbody></table></div>`;
   });
 }
+
 function printCocinaItem(key){
   if(!fbDB)return;
   fbDB.ref(`cola_cocina/${key}`).once('value',snap=>{
     const t=snap.val();if(!t)return;
-    const now=new Date();
-    const fecha=`${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
-    let h=now.getHours(),m=now.getMinutes(),ap=h>=12?'p.m.':'a.m.';h=h%12||12;
-    const hora=`${h}:${String(m).padStart(2,'0')} ${ap}`;
-    const sep='- - - - - - - - - - - - - - - - - - - - - - - -';
-    const items=(t.items||[]).map(it=>`  ${String(it.qty).padStart(2,' ')}  ${it.name.toUpperCase()}`).join('\n');
-    const html=`<div style="font-family:'Courier New',Courier,monospace;font-size:14px;color:#000;background:#fff;padding:22px 18px;line-height:2;white-space:pre-wrap;max-width:280px;margin:0 auto;">
-<b style="display:block;text-align:center;font-size:15px;">  COMANDA / ORDEN SERVICIO</b>
-  ${fecha}               ${hora}
-${sep}
-  MESA     ${t.mesa}
-  MESERO   ${(t.mesero||'').toUpperCase()}
-  AREA     ${t.area||''}
-  CLIENTE  ${t.cuenta||''}
-  FACTURA  ${t.numComanda||''}
-${sep}
-${items}
-${sep}
-<b style="display:block;text-align:center;letter-spacing:2px;">*** FIN COMANDA **</b>
-</div>`;
+    const fakeOrd={waiter:t.mesero||'—'};
+    const fakeSp={name:t.cuenta||'—',items:t.items||[]};
+    // temporarily set curTableKey context
+    const prevKey=curTableKey;
+    curTableKey=`${t.area||'TERRAZA'}_${t.mesa}`;
+    const html=_comandaHTML(fakeSp,t.numComanda||'—',fakeOrd);
+    curTableKey=prevKey;
     document.getElementById('printDoc').innerHTML=html;
     window.print();
     fbDB.ref(`cola_cocina/${key}`).update({impresa:true});
     toast(`🧾 Comanda #${t.numComanda} reimpresa`);
   });
 }
+
 function markCocinaReady(key){
   if(!fbDB)return;
   fbDB.ref(`cola_cocina/${key}`).update({impresa:true});
-  renderCocinaQueue();
+  setTimeout(renderCocinaQueue,400);
   toast('✔ Comanda marcada como lista');
 }
+
 function clearCocinaQueue(){
-  if(!fbDB){toast('Firebase no conectado','err');return;}
+  if(!fbDB)return toast('Firebase no conectado','err');
   if(!confirm('¿Limpiar todas las comandas de cocina?'))return;
   fbRemove('cola_cocina');
   document.getElementById('cocinaList').innerHTML='<div class="empty-msg">Sin comandas pendientes.</div>';
@@ -1545,157 +1571,155 @@ function clearCocinaQueue(){
 }
 
 // ═══════════════════════════════════════════════════
-// 11. SPLIT ASSIGN MODAL
+// 16. SPLIT ASSIGN MODAL
 // ═══════════════════════════════════════════════════
 function openSplitModal(){
   if(!curTableKey)return;
   const splits=getSplits();
   _splitAllItems=[];
   splits.forEach((sp,si)=>(sp.items||[]).forEach(it=>{
-    for(let q=0;q<it.qty;q++)_splitAllItems.push({name:it.name,price:it.price,si});
+    for(let q=0;q<(it.qty||1);q++)_splitAllItems.push({name:it.name,price:it.price,si});
   }));
-  document.getElementById('saList').innerHTML=_splitAllItems.map((it,i)=>`
+  if(!_splitAllItems.length)return toast('Sin items para separar','err');
+  document.getElementById('saList').innerHTML=_splitAllItems.map((it,idx)=>`
     <div class="sarow">
       <span class="oi-name">${it.name}</span>
-      <select class="sasel" id="ss_${i}">
-        ${splits.map((s,si)=>`<option value="${si}" ${si===it.si?'selected':''}>${s.name}</option>`).join('')}
+      <span style="font-family:'Share Tech Mono',monospace;color:var(--green);font-size:.68rem;">$${fmt(it.price)}</span>
+      <select class="sasel" id="sasel_${idx}">
+        ${splits.map((s,si)=>`<option value="${si}"${si===it.si?' selected':''}>${s.name}</option>`).join('')}
       </select>
-      <span style="font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--green);">$${fmt(it.price)}</span>
     </div>`).join('');
   showOv('ovSplit');
 }
+
 function applySplit(){
+  if(!curTableKey)return;
   const splits=getSplits();
   splits.forEach(s=>s.items=[]);
-  _splitAllItems.forEach((it,i)=>{
-    const si=parseInt(document.getElementById(`ss_${i}`).value);
-    const t=splits[si],ex=t.items.find(x=>x.name===it.name&&x.price===it.price);
-    if(ex)ex.qty++;else t.items.push({name:it.name,price:it.price,qty:1});
+  const grouped={};
+  _splitAllItems.forEach((it,idx)=>{
+    const si=parseInt(document.getElementById(`sasel_${idx}`)?.value||0);
+    if(!grouped[si])grouped[si]=[];
+    grouped[si].push(it);
+  });
+  Object.entries(grouped).forEach(([si,arr])=>{
+    const merged={};
+    arr.forEach(it=>{
+      if(merged[it.name]){merged[it.name].qty++;}
+      else{merged[it.name]={name:it.name,price:it.price,qty:1};}
+    });
+    splits[parseInt(si)].items=Object.values(merged);
   });
   fbSet(`mesas/${curTableKey}`,tableOrders[curTableKey]);
-  closeOv('ovSplit');renderSplitTabs();renderOrderItems();buildTables(curZone);
-  toast('✔ Cuentas separadas correctamente');
+  renderSplitTabs();renderOrderItems();buildTables(curZone);
+  closeOv('ovSplit');toast('✔ Cuentas separadas');
 }
 
 // ═══════════════════════════════════════════════════
-// 12. ADMIN PANEL
+// 17. ADMIN PANEL
 // ═══════════════════════════════════════════════════
-function openAdmin(tab){
-  if(curUser&&curUser.role==='mesero')return toast('Acceso denegado — solo admin y cajero','err');
-  switchAdmTab(tab||'sales');
-  showOv('ovAdmin');
+function openAdmin(tab='sales'){
+  if(!curUser||curUser.role!=='admin')return toast('⚠ Solo administradores','err');
+  switchAdmTab(tab);showOv('ovAdmin');
 }
+
 function switchAdmTab(tab){
-  document.querySelectorAll('.adm-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.adm-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.adm-page').forEach(p=>p.classList.remove('show'));
-  document.getElementById(`tab-${tab}`).classList.add('active');
-  document.getElementById(`pg-${tab}`).classList.add('show');
+  const tabEl=document.getElementById('tab-'+tab);
+  if(tabEl)tabEl.classList.add('active');
+  const pgEl=document.getElementById('pg-'+tab);
+  if(pgEl)pgEl.classList.add('show');
   if(tab==='sales')renderSales();
+  if(tab==='txs')renderTxs();
   if(tab==='orders')renderActiveOrders();
   if(tab==='users')renderUsers();
-  if(tab==='txs')renderTxs();
   if(tab==='queue')renderPrintQueue();
   if(tab==='cocina')renderCocinaQueue();
 }
 
-// ── SALES REPORT ──
 function renderSales(){
-  let food=0,bar=0,bev=0;
+  // KPIs
   const validTx=transactions.filter(t=>!t.voided);
-  validTx.forEach(tx=>tx.items.forEach(it=>{
-    const cat=Object.entries(MENU).find(([,items])=>items.some(x=>x.n===it.name))?.[0]||'';
-    const v=it.price*it.qty;
-    if(CAT_FOOD.includes(cat))food+=v;
-    else if(CAT_BAR.includes(cat))bar+=v;
-    else if(CAT_BEV.includes(cat))bev+=v;
-  }));
   const avg=validTx.length?totalDay/validTx.length:0;
   document.getElementById('kpiRow').innerHTML=`
-    <div class="kpi"><div class="kpi-lbl">Venta Total Hoy</div><div class="kpi-val">$${fmt(totalDay)}</div><div class="kpi-sub">${validTx.length} transacciones válidas</div></div>
-    <div class="kpi"><div class="kpi-lbl">Ticket Promedio</div><div class="kpi-val">$${fmt(avg)}</div><div class="kpi-sub">por transacción</div></div>
-    <div class="kpi"><div class="kpi-lbl">Mesas Activas</div><div class="kpi-val">${Object.values(tableOrders).filter(o=>o.splits&&o.splits.some(s=>s.items&&s.items.length)).length}</div><div class="kpi-sub">con pedidos abiertos</div></div>
-    <div class="kpi"><div class="kpi-lbl">Anuladas</div><div class="kpi-val" style="color:var(--red);">${voidCount}</div><div class="kpi-sub">facturas anuladas hoy</div></div>`;
-  const cats=[['🍖 Comidas',food,'#2ecc71'],['🍹 Bar/Cocteles',bar,'#9b59b6'],['🍺 Bebidas',bev,'#3498db']];
-  const maxCat=Math.max(...cats.map(c=>c[1]),1);
-  document.getElementById('catBarsWrap').innerHTML=`<div class="chart-wrap"><div class="chart-title">Desglose por Categoría</div><div class="cat-bars">${
-    cats.map(([lbl,val,col])=>`<div class="catb"><div class="catb-name">${lbl}</div><div class="catb-amt">$${fmt(val)}</div><div class="catb-bar"><div class="catb-fill" style="width:${(val/maxCat*100).toFixed(1)}%;background:${col}"></div></div><div class="catb-pct">${totalDay?((val/totalDay)*100).toFixed(1):0}% del total</div></div>`).join('')
-  }</div></div>`;
+    <div class="kpi"><div class="kpi-lbl">Venta del Día</div><div class="kpi-val">$${fmt(totalDay)}</div><div class="kpi-sub">ITBIS incluido aprox.</div></div>
+    <div class="kpi"><div class="kpi-lbl">Facturas Válidas</div><div class="kpi-val">${validTx.length}</div><div class="kpi-sub">${voidCount} anuladas</div></div>
+    <div class="kpi"><div class="kpi-lbl">Ticket Promedio</div><div class="kpi-val">$${fmt(avg)}</div><div class="kpi-sub">por cuenta</div></div>
+    <div class="kpi"><div class="kpi-lbl">Comandas Hoy</div><div class="kpi-val">${comandaCount-9948}</div><div class="kpi-sub">desde apertura</div></div>`;
+  // Top products bar chart
   const sorted=Object.entries(prodSales).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const mx=sorted[0]?.[1]||1;
+  const max=sorted[0]?sorted[0][1]:1;
   document.getElementById('barChart').innerHTML=sorted.length
-    ?sorted.map(([name,val],i)=>`<div class="brow"><span class="blbl">${name}</span><div class="btrack"><div class="bfill" style="width:${(val/mx*100).toFixed(1)}%;background:${BCOLS[i%10]}"></div></div><span class="bval">$${fmt(val)}</span></div>`).join('')
-    :`<div class="empty-msg">Sin datos. Realiza ventas para ver el ranking.</div>`;
+    ?sorted.map(([n,v],i)=>`
+      <div class="brow">
+        <span class="blbl">${n}</span>
+        <div class="btrack"><div class="bfill" style="width:${Math.round(v/max*100)}%;background:${BCOLS[i%BCOLS.length]}"></div></div>
+        <span class="bval">$${fmt(v)}</span>
+      </div>`).join('')
+    :'<div class="empty-msg">Sin ventas aún.</div>';
+  // Category breakdown
+  const catTotals={};
+  ['Cocteles','Frozen','Cervezas','Mofongos','Plato Fuerte','Pasta','Cortes Angus','Platos Rápidos','Entradas','Guarniciones','Mezcla','Tragos y Botellas','Otras Bebidas']
+    .forEach(cat=>{
+      const names=new Set((MENU[cat]||[]).map(x=>x.n));
+      catTotals[cat]=Object.entries(prodSales).filter(([n])=>names.has(n)).reduce((a,[,v])=>a+v,0);
+    });
+  const catMax=Math.max(...Object.values(catTotals),1);
+  const groups=[['🍹 Bar',['Cocteles','Frozen','Cervezas','Mezcla','Tragos y Botellas']],['🍽 Cocina',['Mofongos','Plato Fuerte','Pasta','Cortes Angus','Platos Rápidos','Entradas','Guarniciones']],['🥤 Otros',['Otras Bebidas']]];
+  document.getElementById('catBarsWrap').innerHTML=`<div class="cat-bars">${groups.map(([label,cats])=>{
+    const t=cats.reduce((a,c)=>a+(catTotals[c]||0),0);
+    return `<div class="catb"><div class="catb-name">${label}</div><div class="catb-amt">$${fmt(t)}</div><div class="catb-bar"><div class="catb-fill" style="width:${Math.round(t/catMax*100)}%;background:var(--green)"></div></div><div class="catb-pct">${totalDay?Math.round(t/totalDay*100):0}% del total</div></div>`;
+  }).join('')}</div>`;
 }
 
-// ── HISTORY ──
 function renderTxs(){
-  const canVoid=curUser&&curUser.role==='admin';
   document.getElementById('txBody').innerHTML=transactions.length
     ?transactions.map(tx=>`<tr class="${tx.voided?'voided':''}">
-        <td style="color:var(--dim);">#${tx.id}</td>
-        <td><b>${tx.table}</b></td>
-        <td>${tx.split}</td>
-        <td>${tx.waiter}</td>
-        <td>${tx.time?new Date(tx.time).toLocaleTimeString('es-DO'):'-'}</td>
-        <td>${tx.items.reduce((a,i)=>a+i.qty,0)}</td>
-        <td style="color:${tx.voided?'var(--red)':'var(--accent)'};font-family:'Share Tech Mono',monospace;">$${fmt(tx.total)}${tx.voided?'<span class="void-tag">ANULADA</span>':''}</td>
-        <td>${(!tx.voided&&canVoid)?`<button class="void-btn" onclick="voidTransaction(${tx.id})">Anular</button>`:(tx.voided?'—':'')}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--accent);">#${tx.id}</td>
+        <td><b>${tx.table}</b></td><td>${tx.split}</td><td>${tx.waiter}</td>
+        <td style="color:var(--dim);white-space:nowrap;">${tx.time?new Date(tx.time).toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
+        <td>${(tx.items||[]).reduce((a,i)=>a+(i.qty||1),0)}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--green);">$${fmt(tx.total)}</td>
+        <td>${tx.voided
+          ?'<span class="void-tag">ANULADA</span>'
+          :`<button class="void-btn" onclick="voidTransaction(${tx.id})">Anular</button>`}</td>
       </tr>`).join('')
-    :`<tr><td colspan="8" class="empty-msg">Sin transacciones aún</td></tr>`;
+    :'<tr><td colspan="8" class="empty-msg">Sin transacciones.</td></tr>';
 }
 
-// ── ACTIVE ORDERS ──
 function renderActiveOrders(){
-  const rows=[];
-  Object.entries(tableOrders).forEach(([key,ord])=>{
-    if(!ord.splits)return;
-    ord.splits.forEach(sp=>{
-      if(!sp.items||!sp.items.length)return;
-      const sc=ord.splits.filter(s=>s.items&&s.items.length).length;
-      rows.push(`<tr>
-        <td><b>${key.split('_')[1]}</b></td><td>${sp.name}</td><td>${ord.waiter}</td>
-        <td>${sp.items.reduce((a,i)=>a+i.qty,0)}</td>
-        <td style="color:var(--accent);font-family:'Share Tech Mono',monospace;">$${fmt(stotal(sp))}</td>
-        <td><span class="tag ${sc>1?'tag-split':'tag-occ'}">${sc>1?`${sc} CUENTAS`:'ABIERTA'}</span></td>
-        <td><button class="ubtn ubtn-edit" onclick="jumpTo('${key}')">→ Ir</button></td>
-      </tr>`);
-    });
-  });
-  document.getElementById('activeBody').innerHTML=rows.length?rows.join('')
-    :`<tr><td colspan="7" class="empty-msg">No hay pedidos activos</td></tr>`;
-}
-function jumpTo(key){
-  closeOv('ovAdmin');
-  const zone=key.split('_')[0],id=key.split('_')[1];
-  if(zone!==curZone){
-    curZone=zone;
-    document.querySelectorAll('.zone-btn').forEach(b=>{if(b.textContent.trim().toUpperCase()===zone)b.click();});
-  }
-  setTimeout(()=>{
-    document.querySelectorAll('.table-btn .tid').forEach(el=>{if(el.textContent===id)el.closest('.table-btn').click();});
-  },150);
+  const rows=Object.entries(tableOrders).filter(([,o])=>o&&o.splits).flatMap(([key,o])=>
+    o.splits.filter(s=>s.items&&s.items.length).map(s=>({key,mesa:key.split('_')[1],sp:s,waiter:o.waiter}))
+  );
+  document.getElementById('activeBody').innerHTML=rows.length
+    ?rows.map(r=>`<tr>
+        <td><b>${r.mesa}</b></td><td>${r.sp.name}</td><td>${r.waiter||'—'}</td>
+        <td>${(r.sp.items||[]).reduce((a,i)=>a+(i.qty||1),0)}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--accent);">$${fmt(stotal(r.sp))}</td>
+        <td><span class="tag tag-occ">ACTIVA</span></td>
+        <td><button class="sbtn sbtn-sec" style="font-size:.6rem;padding:5px 10px;" onclick="closeOv('ovAdmin');selectTable('${r.key}','${r.mesa}')">Ver</button></td>
+      </tr>`).join('')
+    :'<tr><td colspan="7" class="empty-msg">Sin pedidos activos.</td></tr>';
 }
 
-// ── USERS ──
 function renderUsers(){
-  const colors=['#00ffc8','#9b59b6','#3498db','#f39c12','#e74c3c','#2ecc71'];
-  const roleTag={admin:'tag-admin',mesero:'tag-mesero',cajero:'tag-cajero'};
-  const roleLabel={admin:'Administrador',mesero:'Mesero/a',cajero:'Cajero/a'};
-  document.getElementById('usersList').innerHTML=users.map((u,i)=>`
+  document.getElementById('usersList').innerHTML=users.map(u=>`
     <div class="user-card">
-      <div class="uavatar" style="background:${colors[i%6]}22;border:2px solid ${colors[i%6]};color:${colors[i%6]}">
+      <div class="uavatar" style="background:${ROLE_COLORS[u.role]||'#444'}22;color:${ROLE_COLORS[u.role]||'#fff'};">
         ${u.name.charAt(0).toUpperCase()}
       </div>
       <div class="uinfo">
-        <div class="uname">${u.name} <span class="tag ${roleTag[u.role]}">${roleLabel[u.role]}</span></div>
-        <div class="urole">@${u.user}</div>
+        <div class="uname">${u.name}</div>
+        <div class="urole"><span class="tag tag-${u.role}">${u.role}</span> · @${u.user}</div>
       </div>
       <div class="ubtns">
-        <button class="ubtn ubtn-edit" onclick="editUser(${u.id})">Editar</button>
-        ${u.user!=='admin'?`<button class="ubtn ubtn-del" onclick="delUser(${u.id})">Eliminar</button>`:''}
+        <button class="ubtn ubtn-edit" onclick="editUser(${u.id})">✎ Editar</button>
+        ${u.user!=='admin'?`<button class="ubtn ubtn-del" onclick="delUser(${u.id})">✕</button>`:''}
       </div>
     </div>`).join('');
 }
+
 function showUForm(reset=true){if(reset)clearUForm();document.getElementById('uForm').style.display='grid';}
 function hideUForm(){document.getElementById('uForm').style.display='none';}
 function clearUForm(){['uName','uUser','uPass','uEditId'].forEach(id=>document.getElementById(id).value='');document.getElementById('uRole').value='mesero';}
@@ -1711,23 +1735,20 @@ function editUser(id){
 function delUser(id){
   const u=users.find(x=>x.id===id);
   if(!u||u.user==='admin'){toast('No se puede eliminar este usuario','err');return;}
-  if(!confirm(`¿Eliminar usuario "${u.name}"?`))return;
+  if(!confirm(`¿Eliminar "${u.name}"?`))return;
   users=users.filter(x=>x.id!==id);renderUsers();toast('Usuario eliminado','warn');
 }
 function saveUser(){
   const eid=document.getElementById('uEditId').value;
-  const name=document.getElementById('uName').value.trim();
-  const user=document.getElementById('uUser').value.trim().toLowerCase();
-  const pass=document.getElementById('uPass').value;
-  const role=document.getElementById('uRole').value;
-  if(!name||!user){toast('Nombre y usuario son obligatorios','err');return;}
+  const name=gv('uName'),user=gv('uUser').toLowerCase(),pass=gv('uPass'),role=gv('uRole')||'mesero';
+  if(!name||!user)return toast('Nombre y usuario son obligatorios','err');
   if(eid){
     const u=users.find(x=>x.id===parseInt(eid));
     if(u){u.name=name;u.user=user;if(pass)u.pass=pass;u.role=role;}
     toast('✓ Usuario actualizado');
   }else{
-    if(!pass){toast('Contraseña obligatoria para nuevo usuario','err');return;}
-    if(users.find(x=>x.user===user)){toast('Ese nombre de usuario ya existe','err');return;}
+    if(!pass)return toast('Contraseña obligatoria','err');
+    if(users.find(x=>x.user===user))return toast('Ese usuario ya existe','err');
     users.push({id:nextUserId++,name,user,pass,role});
     toast('✓ Usuario creado');
   }
@@ -1736,21 +1757,23 @@ function saveUser(){
 
 // ── CSV EXPORT ──
 function exportCSV(){
-  if(!transactions.length){toast('Sin datos para exportar','err');return;}
+  if(!transactions.length)return toast('Sin datos para exportar','err');
   const rows=[['#','Mesa','Cuenta','Mesero','Hora','Items','Total','Estado']];
-  transactions.forEach(tx=>{
-    rows.push([tx.id,tx.table,tx.split,tx.waiter,tx.time?new Date(tx.time).toLocaleTimeString('es-DO'):'-',tx.items.reduce((a,i)=>a+i.qty,0),tx.total,tx.voided?'ANULADA':'VÁLIDA']);
-  });
-  const csv=rows.map(r=>r.join(',')).join('\n');
+  transactions.forEach(tx=>rows.push([
+    tx.id,tx.table,tx.split,tx.waiter,
+    tx.time?new Date(tx.time).toLocaleString('es-DO'):'-',
+    (tx.items||[]).reduce((a,i)=>a+(i.qty||1),0),
+    tx.total, tx.voided?'ANULADA':'VÁLIDA'
+  ]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download=`ventas_${new Date().toLocaleDateString('es-DO').replace(/\//g,'-')}.csv`;
-  a.click();
-  toast('📄 CSV exportado');
+  a.click();toast('📄 CSV exportado');
 }
 
 // ═══════════════════════════════════════════════════
-// 13. UTILS
+// 18. STATS
 // ═══════════════════════════════════════════════════
 function updateStats(){
   const z=ZONES[curZone];let occ=0;
@@ -1763,95 +1786,45 @@ function updateStatBar(){
   document.getElementById('statTx').textContent=transactions.filter(t=>!t.voided).length;
   document.getElementById('statVoid').textContent=voidCount;
 }
-function fmt(n){return Math.round(n).toLocaleString('es-DO');}
-function gv(id){return document.getElementById(id)?.value?.trim()||'';}
-function showOv(id){document.getElementById(id).classList.add('show');}
-function closeOv(id){document.getElementById(id).classList.remove('show');}
-let _tt;
-function toast(msg,type=''){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');
-  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2600);
-}
-setInterval(()=>document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8),1000);
-document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8);
 
 // ═══════════════════════════════════════════════════
-// 15. TOUCH GESTURES (mobile swipe-down to close panel)
+// 19. TOUCH GESTURES — swipe-down to close order panel
 // ═══════════════════════════════════════════════════
 (function initTouchGestures(){
   const panel=document.getElementById('orderPanel');
   let startY=0,startX=0,dragging=false;
   panel.addEventListener('touchstart',e=>{
-    startY=e.touches[0].clientY;
-    startX=e.touches[0].clientX;
-    dragging=true;
+    const rect=panel.getBoundingClientRect();
+    if(e.touches[0].clientY-rect.top>70)return; // only from drag handle area
+    startY=e.touches[0].clientY;startX=e.touches[0].clientX;dragging=true;
   },{passive:true});
   panel.addEventListener('touchmove',e=>{
     if(!dragging)return;
-    const dy=e.touches[0].clientY-startY;
-    const dx=Math.abs(e.touches[0].clientX-startX);
-    // Only swipe-down gesture (more vertical than horizontal)
+    const dy=e.touches[0].clientY-startY,dx=Math.abs(e.touches[0].clientX-startX);
     if(dy>0&&dy>dx*1.5&&window.innerWidth<=767){
-      panel.style.transform=`translateY(${Math.min(dy,200)}px)`;
+      panel.style.transform=`translateY(${Math.min(dy,220)}px)`;
+      panel.style.transition='none';
     }
   },{passive:true});
   panel.addEventListener('touchend',e=>{
-    dragging=false;
+    if(!dragging)return;dragging=false;
     const dy=e.changedTouches[0].clientY-startY;
-    panel.style.transform='';
-    if(dy>100&&window.innerWidth<=767){
-      closeOrder();
-    }
+    panel.style.transition='';panel.style.transform='';
+    if(dy>110&&window.innerWidth<=767)closeOrder();
   },{passive:true});
 })();
 
 // ═══════════════════════════════════════════════════
-// 16. PWA — Register Service Worker
+// 20. CLOCK
 // ═══════════════════════════════════════════════════
-if('serviceWorker' in navigator){
-  // Inline service worker: cache-first for offline use
-  const swCode=`
-const CACHE='family-pos-v1';
-const ASSETS=[location.href];
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch',e=>{
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
-});`;
-  const blob=new Blob([swCode],{type:'application/javascript'});
-  const swURL=URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swURL).catch(()=>{});
-}
+function updateClock(){document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8);}
+updateClock();setInterval(updateClock,1000);
 
 // ═══════════════════════════════════════════════════
-// 14. DEMO DATA (local, pre-loaded orders)
+// 21. BOOT
 // ═══════════════════════════════════════════════════
-tableOrders[tkey('TERRAZA','T-1')]={waiter:'Maria',splits:[
-  {id:0,name:'Cuenta 1',items:[{name:'Mojito de Chinola',price:295,qty:2},{name:'Mofongo Clásico a la Crema',price:595,qty:1}]},
-  {id:1,name:'Cuenta 2',items:[{name:'Corona',price:200,qty:2},{name:'Mozzarella Sticks',price:395,qty:1}]},
-]};
-tableOrders[tkey('TERRAZA','T-3')]={waiter:'Carlos',splits:[
-  {id:0,name:'Cuenta 1',items:[{name:'Ribeye Angus',price:1495,qty:1},{name:'Aperol',price:450,qty:2}]},
-]};
-// Seed demo transactions
-(function seedDemo(){
-  const seed=[
-    {id:3,table:'T-5',split:'Cuenta 1',waiter:'Maria',items:[{name:'Pasta Camarones',price:895,qty:1},{name:'Mojito The Family',price:350,qty:2}],total:1595,time:new Date(Date.now()-600000).toISOString(),voided:false},
-    {id:2,table:'T-2',split:'Cuenta 1',waiter:'Carlos',items:[{name:'Churrasco Angus',price:1495,qty:1}],total:1495,time:new Date(Date.now()-1800000).toISOString(),voided:false},
-    {id:1,table:'T-4',split:'Cuenta 1',waiter:'Maria',items:[{name:'Mofongo Mixto',price:695,qty:1},{name:'Presidente',price:150,qty:3}],total:1145,time:new Date(Date.now()-7200000).toISOString(),voided:false},
-  ];
-  transactions=seed;txCount=3;
-  transactions.forEach(tx=>tx.items.forEach(it=>prodSales[it.name]=(prodSales[it.name]||0)+it.price*it.qty));
-  totalDay=transactions.filter(t=>!t.voided).reduce((a,t)=>a+t.total,0);
-  updateStatBar();
-})();
+prefillFBForm(DEFAULT_FB_CONFIG);
+initFirebase();
 buildTables('TERRAZA');
 </script>
 </body>
